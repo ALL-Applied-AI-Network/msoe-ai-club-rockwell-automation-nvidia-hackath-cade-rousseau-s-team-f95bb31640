@@ -46,9 +46,39 @@ This is your team's repository for the four-week physical AI hackathon run by Ro
 
 ## Working in this repository
 
+### Setup
+
+1. Install [uv](https://docs.astral.sh/uv/).
+2. Clone the repo (use the URL from the green "Code" button):
+   ```bash
+   git clone <this repository's URL from the green "Code" button>
+   ```
+3. Run `uv sync` inside the repo.
+
+### Data
+
+Download the Fluid Mixing dataset from the [event guide link](https://msoe-maic.com/library?article=Rockwell-NVIDIA-Fall-2026-Fluid-Mixing) above ("The three datasets"). Unzip it into `data/` so that `data/vial_fill/image_index.csv` exists. The folders are `vial_fill/`, `tank_level/` and `cap_seal/`, plus `videos.csv` and `README.md`. We don't use `cap_seal`. `data/` is gitignored. If extraction creates a wrapper folder (Google Drive zips and Windows "Extract All" do this), move `vial_fill/` and `tank_level/` up so that `data/vial_fill/image_index.csv` exists. If `uv run pytest` reports 3 skipped, the data isn't where it should be.
+
+### Run
+
 ```bash
-git clone <this repository's URL from the green "Code" button>
+uv run pytest
+uv run streamlit run dashboard/app.py
 ```
+
+### Who owns what
+
+| Workstream | Owners | Lives in |
+|---|---|---|
+| Digital twin and synthetic data | Cade, Vlad | `twin/` (Isaac Sim's own Python, on Brev) |
+| Camera and color measurement | Braedon, Kal | `src/changeover_guard/dataset.py`, `measure.py` |
+| Mixing model and explanations | Adrian, Niko | `src/changeover_guard/mixing.py`, `advise.py` |
+| Dashboard and integration | Mat | `dashboard/app.py` |
+| Business case and testing | William | `eval/` |
+
+`contracts.py` is shared. Changes to it need a heads-up to the whole team.
+
+### Git
 
 - Commit early and push often. Mentors and judges see what's here.
 - **Don't commit large datasets or model weights.** Keep them out with `.gitignore` and note in this README where to download them.

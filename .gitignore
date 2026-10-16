@@ -1,0 +1,12 @@
+data/
+synthetic/
+outputs/
+.venv/
+__pycache__/
+*.mp4
+*.jpg
+.pytest_cache/
+.ruff_cache/
+.serena
+docs/superpowers
+.env
