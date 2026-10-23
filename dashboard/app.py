@@ -6,9 +6,9 @@ import cv2
 import pandas as pd
 import streamlit as st
 
-from changeover_guard.contracts import delta_e
+from changeover_guard.contracts import COLOR_WARN_DE, delta_e
 from changeover_guard.dataset import frames, vial_labels
-from changeover_guard.measure import _REFERENCE_SIZE, _TANK_ROIS, tanks
+from changeover_guard.measure import tank_rois, tanks
 
 ROOT = Path(__file__).parents[1] / "data"
 PROJECT_ROOT = Path(__file__).parents[1]
@@ -16,25 +16,10 @@ AI_TANK_ROOT = PROJECT_ROOT / "generated" / "images" / "tank_color_variation"
 AI_COLOR_MANIFEST = AI_TANK_ROOT / "ai_tank_colors.json"
 
 
-def _scaled_rois(image):
-    """Return the measurement ROIs scaled to the supplied image dimensions."""
-    height, width = image.shape[:2]
-    scale_x = width / _REFERENCE_SIZE[0]
-    scale_y = height / _REFERENCE_SIZE[1]
-    return {
-        tank: (
-            round(x1 * scale_x),
-            round(y1 * scale_y),
-            round(x2 * scale_x),
-            round(y2 * scale_y),
-        )
-        for tank, (x1, y1, x2, y2) in _TANK_ROIS.items()
-    }
-
-
 def _annotated_tank_image(image):
     annotated = image.copy()
-    for tank, (x1, y1, x2, y2) in _scaled_rois(image).items():
+    # UPDATED: draw the exact public ROIs used by measure.tanks().
+    for tank, (x1, y1, x2, y2) in tank_rois(image.shape).items():
         cv2.rectangle(annotated, (x1, y1), (x2, y2), (0, 255, 0), 2)
         cv2.putText(
             annotated,
@@ -68,6 +53,18 @@ def _color_swatch(rgb) -> str:
     )
 
 
+def _image_timestamp(image_path: Path) -> datetime:
+    """Read a tank frame timestamp from its filename when available."""
+    try:
+        return datetime.strptime(
+            image_path.stem.removeprefix("tank_level_"), "%Y%m%d_%H%M%S_%f"
+        )
+    except ValueError:
+        # Generated images have no capture timestamp; their file timestamp is
+        # still more truthful than assigning the current time.
+        return datetime.fromtimestamp(image_path.stat().st_mtime)
+
+
 def show_tank_measurement() -> None:
     sources = {}
     real_images = sorted((ROOT / "tank_level" / "images").glob("*.jpg"))
@@ -91,27 +88,40 @@ def show_tank_measurement() -> None:
         st.error(f"Could not read {image_path}")
         return
 
-    reading = tanks(image, datetime.now())
-    actual_colors = load_ai_color_targets().get(image_path.name, {})
+    # UPDATED: preserve the real frame timestamp and keep the rest of the
+    # dashboard available when one frame cannot be measured.
+    try:
+        reading = tanks(image, _image_timestamp(image_path))
+    except (ValueError, cv2.error) as exc:
+        st.error(f"Could not measure tank colors in {image_path.name}: {exc}")
+        return
+
+    # UPDATED: manifest values are generator requests, not pixel measurements.
+    requested_colors = load_ai_color_targets().get(image_path.name, {})
     st.image(
         _annotated_tank_image(image),
         caption=f"{source_name}: {image_path.name}; green boxes are the measurement ROIs",
-        use_container_width=True,
+        width="stretch",
     )
 
-    st.subheader("Calculated tank colors")
-    rois = _scaled_rois(image)
+    st.subheader("Measured tank colors")
+    rois = tank_rois(image.shape)
     columns = st.columns(len(reading.colors))
     for column, (tank, color) in zip(columns, reading.colors.items()):
         x1, y1, x2, y2 = rois[tank]
-        actual = actual_colors.get(tank, "N/A")
+        requested = requested_colors.get(tank, "N/A")
         calculated = tuple(float(channel) for channel in color)
-        color_error = "N/A" if actual == "N/A" else f"{delta_e(actual, calculated):.2f}"
+        # UPDATED: keep the dashboard compact by coloring only the ΔE value
+        # red when the measured error reaches the project warning threshold.
+        color_error_value = None if requested == "N/A" else delta_e(requested, calculated)
+        color_error = "N/A" if color_error_value is None else f"{color_error_value:.2f}"
+        if color_error_value is not None and color_error_value >= COLOR_WARN_DE:
+            color_error = f"<span style='color:#c1121f; font-weight:700'>{color_error}</span>"
         column.markdown(
             f"<div style='font-size: 0.9rem; line-height: 1.3'>"
             f"<strong>{tank}</strong><br>"
-            f"Actual RGB: {_color_swatch(actual)}{actual}<br>"
-            f"Calculated RGB: {_color_swatch(calculated)}"
+            f"Requested RGB: {_color_swatch(requested)}{requested}<br>"
+            f"Measured RGB: {_color_swatch(calculated)}"
             f"{tuple(round(channel, 1) for channel in calculated)}<br>"
             f"Color error (ΔE): {color_error}"
             "</div>",

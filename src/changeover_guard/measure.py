@@ -7,26 +7,42 @@ import numpy as np
 
 from changeover_guard.contracts import TankReading, VialMeasurement
 
-# Interior liquid regions for the fixed tank_level camera.  Coordinates are
+# UPDATED: Narrow liquid strips are used instead of the former full tank boxes.
+# They avoid the tank walls, headspace above the liquid, and the white support
+# post in front of each tank across the supplied real frames. Coordinates are
 # expressed for the supplied 640x480 frames and scaled for other resolutions.
 # T300 is deliberately omitted because it is out of service and must not be
 # used by the recipe model.
 _TANK_ROIS = {
-    "T100": (180, 325, 245, 395),
-    "T200": (290, 325, 355, 395),
-    "T400": (510, 320, 575, 385),
+    "T100": (185, 345, 203, 385),
+    "T200": (295, 345, 315, 385),
+    "T400": (515, 345, 535, 385),
 }
 _REFERENCE_SIZE = (640, 480)
 
 
-def _tank_crop(image: np.ndarray, roi: tuple[int, int, int, int]) -> np.ndarray:
-    """Extract a calibrated ROI, scaling coordinates from the reference size."""
-    height, width = image.shape[:2]
+def tank_rois(shape: tuple[int, ...]) -> dict[str, tuple[int, int, int, int]]:
+    """Return the calibrated tank ROIs scaled to an image shape."""
+    if len(shape) < 2 or shape[0] <= 0 or shape[1] <= 0:
+        raise ValueError("shape must contain positive height and width")
+
+    height, width = shape[:2]
     scale_x = width / _REFERENCE_SIZE[0]
     scale_y = height / _REFERENCE_SIZE[1]
+    return {
+        tank: (
+            round(x1 * scale_x),
+            round(y1 * scale_y),
+            round(x2 * scale_x),
+            round(y2 * scale_y),
+        )
+        for tank, (x1, y1, x2, y2) in _TANK_ROIS.items()
+    }
+
+
+def _tank_crop(image: np.ndarray, roi: tuple[int, int, int, int]) -> np.ndarray:
+    """Extract an already-scaled calibrated ROI."""
     x1, y1, x2, y2 = roi
-    x1, x2 = round(x1 * scale_x), round(x2 * scale_x)
-    y1, y2 = round(y1 * scale_y), round(y2 * scale_y)
     return image[y1:y2, x1:x2]
 
 
@@ -57,10 +73,8 @@ def tanks(image: np.ndarray, timestamp: datetime) -> TankReading:
     if image.shape[0] == 0 or image.shape[1] == 0:
         raise ValueError("image must not be empty")
 
-    colors = {
-        tank: _robust_rgb(_tank_crop(image, roi))
-        for tank, roi in _TANK_ROIS.items()
-    }
+    rois = tank_rois(image.shape)
+    colors = {tank: _robust_rgb(_tank_crop(image, rois[tank])) for tank in rois}
     return TankReading(timestamp=timestamp, colors=colors)
 
 
