@@ -9,12 +9,14 @@ The twin is the organizers' `csi_digital_twin_v1`. Unzip it to `data/csi_digital
 ## Run
 
 ```bash
-uv run python twin/calibrate.py               # liquid colors from video 5 -> twin/calibration.json (committed)
-uv run python twin/manifest.py --limit 60     # vials to render -> synthetic/manifest.csv
-uv run python twin/fake_render.py             # stand-in 2D renders -> synthetic/ (video_id 100)
+uv run python twin/calibrate.py      # liquid colors from video 5 -> twin/calibration.json (committed)
+uv run python twin/manifest.py       # every valid recipe x 3 vials -> synthetic/manifest.csv
+uv run python twin/fake_render.py    # quick 2D stand-in renders -> synthetic/ (video_id 100)
 ```
 
 Then load the output with `dataset.frames("synthetic", 100)`.
+
+`render.py` makes the real Isaac Sim renders on Brev, in the same layout and with the same video_id (see `BREV.md`).
 
 ## Twin knobs (fill station)
 
@@ -28,7 +30,7 @@ Found with `uv run --with usd-core python twin/inspect_usd.py data/csi_digital_t
 - **Recipe the animation plays:** the blue-to-total height ratio is 0.72, so it's recipe 7 (50 mL T400 + 20 mL T100 = 70 mL).
 - **Liquid size at 686:** 26.4 mm across and 123 mm tall, which is about 0.57 mL per mm of height.
 - **Changing the fill level:** scale the `Fill_liquid` Xform in Z by `target_ml / 70`, or pick an earlier time code.
-- **Liquid color:** the material `/FillStation/_materials/USD_blue_liquid_approximation` is a plain UsdPreviewSurface with `diffuseColor` (0.006, 0.2, 0.3), `opacity` 0.6, `ior` 1.333 and `roughness` 0.12. There's no volume absorption, so a material color does **not** map directly to a pixel color. That mapping has to be calibrated by rendering (see `BREV.md`).
+- **Liquid color:** the material `/FillStation/_materials/USD_blue_liquid_approximation` is a plain UsdPreviewSurface with `diffuseColor` (0.006, 0.2, 0.3), `opacity` 0.6, `ior` 1.333 and `roughness` 0.12. There's no volume absorption, so a material color does **not** map directly to a pixel color. `render.py --calibrate` measures that mapping into `material_lut.json`.
 - **Stream:** `Fill_dispensing_stream` uses the material `USD_jet_approximation` and is visible during the pours.
 - **Lights:** these RectLights are the domain-randomization knobs (current intensity in brackets):
   - `Fill_overhead_panel` (557)

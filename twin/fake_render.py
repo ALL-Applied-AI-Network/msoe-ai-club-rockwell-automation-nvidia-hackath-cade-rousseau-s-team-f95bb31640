@@ -25,7 +25,8 @@ BOTTOM_Y, PX_PER_ML = 422, 3.2               # from recipes 5 and 6; matches twi
 FILL_STEPS = (0.33, 0.66, 1.0)               # in_fill frames per vial, as fractions of total mL
 
 
-def video_frame(cam, t):
+def video_frame(cam: str, t: float) -> np.ndarray:
+    """BGR frame of video 5 from camera cam at t seconds."""
     cap = cv2.VideoCapture(str(ROOT / "data" / cam / "videos" / f"{cam}_video_5.mp4"))
     cap.set(cv2.CAP_PROP_POS_MSEC, t * 1000)
     ok, im = cap.read()
@@ -34,7 +35,8 @@ def video_frame(cam, t):
     return im
 
 
-def render(empty, box_mean, rgb, ml, light):
+def render(empty: np.ndarray, box_mean: np.ndarray, rgb: list[float], ml: float, light: float) -> np.ndarray:
+    """Tint ml of liquid into the empty-vial frame so the box shows rgb; light in [0, 1] scales brightness."""
     im = empty.astype(float)
     mask = np.zeros(im.shape[:2])
     mask[max(int(BOTTOM_Y - ml * PX_PER_ML), VISIBLE[0]):VISIBLE[1], X0:X1] = 1
@@ -47,7 +49,7 @@ def render(empty, box_mean, rgb, ml, light):
     return np.clip(im, 0, 255).astype(np.uint8)
 
 
-def main():
+def main() -> None:
     with open(ROOT / "synthetic" / "manifest.csv") as fh:
         rows = list(csv.DictReader(fh))
     cal = json.loads((ROOT / "twin" / "calibration.json").read_text())
@@ -73,6 +75,7 @@ def main():
     for (vf, tl), im in zip(write_root(out, VIDEO_ID, frames, recipes), images):
         cv2.imwrite(str(vf), im)
         cv2.imwrite(str(tl), tank)
+    cv2.imwrite(str(out / "tank_still.jpg"), tank)   # render.py reuses it: the twin has no tanks
     print(f"wrote {len(rows)} vials, {len(frames)} frames to synthetic/ (video_id {VIDEO_ID})")
 
 
