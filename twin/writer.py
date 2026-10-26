@@ -11,7 +11,8 @@ STEP_S = 2.0                                 # real stills are sampled about eve
 TANKS = ("T100", "T200", "T400")
 
 
-def write_root(root, video_id, frames, recipes):
+def write_root(root: str | Path, video_id: int, frames: list[dict],
+               recipes: dict[int, dict[str, float]]) -> list[tuple[Path, Path]]:
     """Write image indexes and labels; return [(vial_fill_path, tank_level_path)] to save images to.
 
     frames: in time order, dicts with in_fill (0/1), vial and recipe_id (None between fills).
