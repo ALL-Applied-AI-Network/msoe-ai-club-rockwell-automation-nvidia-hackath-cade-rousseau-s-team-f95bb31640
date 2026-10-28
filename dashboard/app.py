@@ -18,7 +18,6 @@ from changeover_guard.contracts import (
     color_difference,
 )
 from changeover_guard.dataset import frames, vial_labels
-from changeover_guard.measure import tank_rois, tanks
 
 ROOT = Path(__file__).parents[1] / "data"
 PROJECT_ROOT = Path(__file__).parents[1]
@@ -35,10 +34,10 @@ AI_FILL_ROOT = PROJECT_ROOT / "generated" / "images" / "tank_fill_level"
 AI_FILL_MANIFEST = AI_FILL_ROOT / "json" / "tank_fill_levels.json"
 
 
-def _annotated_tank_image(image):
+def _annotated_tank_image(image, rois):
     annotated = image.copy()
-    # UPDATED: draw the exact public ROIs used by measure.tanks().
-    for tank, (x1, y1, x2, y2) in tank_rois(image.shape).items():
+    # Draw the liquid ROIs that measure.tanks() actually reads.
+    for tank, (x1, y1, x2, y2) in rois.items():
         cv2.rectangle(annotated, (x1, y1), (x2, y2), (0, 255, 0), 2)
         cv2.putText(
             annotated,
@@ -94,7 +93,7 @@ def _annotated_fill_image(image, expected, measured, rois):
         # green always means measured.
         warning = difference is not None and difference > TANK_FILL_WARN_PERCENT
         label_color = (0, 0, 255) if warning else (255, 255, 255)
-        label = f"{tank}: {measured_level:.1f}%" if measured_level is not None else tank
+        label = f"{tank}: {measured_level:.1f}%" if measured_level is not None else f"{tank}: no line"
         cv2.putText(
             annotated,
             label,
@@ -112,11 +111,9 @@ def load_ai_fill_targets():
     """Read actual tank levels from the editable fill-image manifest."""
     if not AI_FILL_MANIFEST.exists():
         return {}
-    # The fill panel reruns while open. Do not cache this small manifest: the
-    # red reference line must move when an operator edits and saves the JSON.
+    # Do not cache this small manifest: the red reference line must move when
+    # an operator edits and saves the JSON.
     manifest = json.loads(AI_FILL_MANIFEST.read_text(encoding="utf-8"))
-    # level_percent describes the actual liquid level; the separate
-    # measure_fill_line_at_percent field documents the measurement target.
     return {
         record["filename"]: {
             tank: float(details["level_percent"])
@@ -149,19 +146,20 @@ def _image_timestamp(image_path: Path) -> datetime:
         return datetime.fromtimestamp(image_path.stat().st_mtime)
 
 
-@st.fragment(run_every="1s")
+def _reload_measure_if_edited() -> None:
+    """Pick up ROI edits in measure.py without restarting Streamlit."""
+    # Python keeps imported modules in memory across reruns. Reload measure.py
+    # only after a file edit; every call site uses measure.<name>, so both the
+    # color and fill panels see the new ROIs.
+    source_stat = Path(measure.__file__).stat()
+    source_signature = (source_stat.st_mtime_ns, source_stat.st_size)
+    if st.session_state.get("measure_source_signature") != source_signature:
+        importlib.reload(measure)
+        st.session_state["measure_source_signature"] = source_signature
+
+
 def show_tank_fill_measurement() -> None:
     """Display measured tank fill levels beside their expected percentages."""
-    # Streamlit reruns this fragment while the page is open, but Python keeps
-    # imported modules in memory. Reload measure.py only after a file edit so
-    # the detector, blue boxes, and coordinate readout all use the new ROIs.
-    measure_path = Path(measure.__file__)
-    source_stat = measure_path.stat()
-    source_signature = (source_stat.st_mtime_ns, source_stat.st_size)
-    if st.session_state.get("fill_measure_source_signature") != source_signature:
-        importlib.reload(measure)
-        st.session_state["fill_measure_source_signature"] = source_signature
-
     st.subheader("Tank fill-level measurement")
     fill_targets = load_ai_fill_targets()
     fill_images = sorted(AI_FILL_ROOT.glob("tank_level_variant_*.png"))
@@ -242,16 +240,24 @@ def show_tank_fill_measurement() -> None:
     columns = st.columns(len(measured))
     for column, (tank, measured_level) in zip(columns, measured.items()):
         expected_level = expected.get(tank)
-        difference = None if expected_level is None else abs(expected_level - measured_level)
-        is_warning = difference is not None and difference > TANK_FILL_WARN_PERCENT
+        difference = (
+            None
+            if expected_level is None or measured_level is None
+            else abs(expected_level - measured_level)
+        )
+        # No visible line means the level is unknown, which is itself a warning.
+        is_warning = measured_level is None or (
+            difference is not None and difference > TANK_FILL_WARN_PERCENT
+        )
         text_color = "#c1121f" if is_warning else "#167c2e"
         difference_text = "N/A" if difference is None else f"{difference:.1f}%"
         expected_text = "N/A" if expected_level is None else f"{expected_level:.1f}%"
+        measured_text = "no line" if measured_level is None else f"{measured_level:.1f}%"
         column.markdown(
             f"<div style='font-size:0.9rem; line-height:1.35; color:{text_color}'>"
             f"<strong>{tank}</strong><br>"
             f"Expected: {expected_text}<br>"
-            f"Measured: {measured_level:.1f}%<br>"
+            f"Measured: {measured_text}<br>"
             f"Difference: {difference_text}"
             "</div>",
             unsafe_allow_html=True,
@@ -289,7 +295,8 @@ def show_tank_measurement() -> None:
     # UPDATED: preserve the real frame timestamp and keep the rest of the
     # dashboard available when one frame cannot be measured.
     try:
-        reading = tanks(image, _image_timestamp(image_path))
+        reading = measure.tanks(image, _image_timestamp(image_path))
+        rois = measure.liquid_rois(image)
     except (ValueError, cv2.error) as exc:
         st.error(f"Could not measure tank colors in {image_path.name}: {exc}")
         return
@@ -307,7 +314,7 @@ def show_tank_measurement() -> None:
         else {}
     )
     st.image(
-        _annotated_tank_image(image),
+        _annotated_tank_image(image, rois),
         caption=f"{source_name}: {image_path.name}; green boxes are the measurement ROIs",
         width="stretch",
     )
@@ -315,7 +322,6 @@ def show_tank_measurement() -> None:
     st.subheader("Measured tank colors")
     # Show the same CIEDE2000 warning boundary used for every image set.
     st.caption(f"Off-color warning at ΔE ≥ {COLOR_WARN_DE:g}.")
-    rois = tank_rois(image.shape)
     columns = st.columns(len(reading.colors))
     for column, (tank, color) in zip(columns, reading.colors.items()):
         x1, y1, x2, y2 = rois[tank]
@@ -350,6 +356,9 @@ def show_tank_measurement() -> None:
 
 
 st.title("Changeover Guard")
+# Any rerun reloads edited ROIs; this button just triggers one on demand.
+st.button("Reload calibration")
+_reload_measure_if_edited()
 show_tank_measurement()
 
 if not (ROOT / "vial_fill").exists():

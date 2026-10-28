@@ -3,181 +3,181 @@
     {
       "filename": "tank_level_variant_01.png",
       "tank_levels": {
-        "T100": {"level_percent": 18, "measure_fill_line_at_percent": 18},
-        "T200": {"level_percent": 36, "measure_fill_line_at_percent": 36},
-        "T300": {"level_percent": 55, "measure_fill_line_at_percent": 55},
-        "T400": {"level_percent": 65, "measure_fill_line_at_percent": 65}
+        "T100": {"level_percent": 18},
+        "T200": {"level_percent": 36},
+        "T300": {"level_percent": 55},
+        "T400": {"level_percent": 65}
       }
     },
     {
       "filename": "tank_level_variant_02.png",
       "tank_levels": {
-        "T100": {"level_percent": 22, "measure_fill_line_at_percent": 22},
-        "T200": {"level_percent": 48, "measure_fill_line_at_percent": 48},
-        "T300": {"level_percent": 59, "measure_fill_line_at_percent": 59},
-        "T400": {"level_percent": 70, "measure_fill_line_at_percent": 70}
+        "T100": {"level_percent": 22},
+        "T200": {"level_percent": 48},
+        "T300": {"level_percent": 59},
+        "T400": {"level_percent": 70}
       }
     },
     {
       "filename": "tank_level_variant_03.png",
       "tank_levels": {
-        "T100": {"level_percent": 25, "measure_fill_line_at_percent": 25},
-        "T200": {"level_percent": 45, "measure_fill_line_at_percent": 45},
-        "T300": {"level_percent": 61, "measure_fill_line_at_percent": 61},
-        "T400": {"level_percent": 73, "measure_fill_line_at_percent": 73}
+        "T100": {"level_percent": 25},
+        "T200": {"level_percent": 45},
+        "T300": {"level_percent": 61},
+        "T400": {"level_percent": 73}
       }
     },
     {
       "filename": "tank_level_variant_04.png",
       "tank_levels": {
-        "T100": {"level_percent": 28, "measure_fill_line_at_percent": 28},
-        "T200": {"level_percent": 50, "measure_fill_line_at_percent": 50},
-        "T300": {"level_percent": 65, "measure_fill_line_at_percent": 65},
-        "T400": {"level_percent": 77, "measure_fill_line_at_percent": 77}
+        "T100": {"level_percent": 28},
+        "T200": {"level_percent": 50},
+        "T300": {"level_percent": 65},
+        "T400": {"level_percent": 77}
       }
     },
     {
       "filename": "tank_level_variant_05.png",
       "tank_levels": {
-        "T100": {"level_percent": 30, "measure_fill_line_at_percent": 30},
-        "T200": {"level_percent": 55, "measure_fill_line_at_percent": 55},
-        "T300": {"level_percent": 70, "measure_fill_line_at_percent": 70},
-        "T400": {"level_percent": 25, "measure_fill_line_at_percent": 25}
+        "T100": {"level_percent": 30},
+        "T200": {"level_percent": 55},
+        "T300": {"level_percent": 70},
+        "T400": {"level_percent": 25}
       }
     },
     {
       "filename": "tank_level_variant_06.png",
       "tank_levels": {
-        "T100": {"level_percent": 45, "measure_fill_line_at_percent": 45},
-        "T200": {"level_percent": 62, "measure_fill_line_at_percent": 62},
-        "T300": {"level_percent": 70, "measure_fill_line_at_percent": 70},
-        "T400": {"level_percent": 30, "measure_fill_line_at_percent": 30}
+        "T100": {"level_percent": 45},
+        "T200": {"level_percent": 62},
+        "T300": {"level_percent": 70},
+        "T400": {"level_percent": 30}
       }
     },
     {
       "filename": "tank_level_variant_07.png",
       "tank_levels": {
-        "T100": {"level_percent": 50, "measure_fill_line_at_percent": 50},
-        "T200": {"level_percent": 65, "measure_fill_line_at_percent": 65},
-        "T300": {"level_percent": 75, "measure_fill_line_at_percent": 75},
-        "T400": {"level_percent": 38, "measure_fill_line_at_percent": 38}
+        "T100": {"level_percent": 50},
+        "T200": {"level_percent": 65},
+        "T300": {"level_percent": 75},
+        "T400": {"level_percent": 38}
       }
     },
     {
       "filename": "tank_level_variant_08.png",
       "tank_levels": {
-        "T100": {"level_percent": 55, "measure_fill_line_at_percent": 55},
-        "T200": {"level_percent": 70, "measure_fill_line_at_percent": 70},
-        "T300": {"level_percent": 25, "measure_fill_line_at_percent": 25},
-        "T400": {"level_percent": 48, "measure_fill_line_at_percent": 48}
+        "T100": {"level_percent": 55},
+        "T200": {"level_percent": 70},
+        "T300": {"level_percent": 25},
+        "T400": {"level_percent": 48}
       }
     },
     {
       "filename": "tank_level_variant_09.png",
       "tank_levels": {
-        "T100": {"level_percent": 55, "measure_fill_line_at_percent": 55},
-        "T200": {"level_percent": 75, "measure_fill_line_at_percent": 75},
-        "T300": {"level_percent": 30, "measure_fill_line_at_percent": 30},
-        "T400": {"level_percent": 45, "measure_fill_line_at_percent": 45}
+        "T100": {"level_percent": 55},
+        "T200": {"level_percent": 75},
+        "T300": {"level_percent": 30},
+        "T400": {"level_percent": 45}
       }
     },
     {
       "filename": "tank_level_variant_10.png",
       "tank_levels": {
-        "T100": {"level_percent": 65, "measure_fill_line_at_percent": 65},
-        "T200": {"level_percent": 72, "measure_fill_line_at_percent": 72},
-        "T300": {"level_percent": 35, "measure_fill_line_at_percent": 35},
-        "T400": {"level_percent": 55, "measure_fill_line_at_percent": 55}
+        "T100": {"level_percent": 65},
+        "T200": {"level_percent": 72},
+        "T300": {"level_percent": 35},
+        "T400": {"level_percent": 55}
       }
     },
     {
       "filename": "tank_level_variant_11.png",
       "tank_levels": {
-        "T100": {"level_percent": 65, "measure_fill_line_at_percent": 65},
-        "T200": {"level_percent": 25, "measure_fill_line_at_percent": 25},
-        "T300": {"level_percent": 40, "measure_fill_line_at_percent": 40},
-        "T400": {"level_percent": 60, "measure_fill_line_at_percent": 60}
+        "T100": {"level_percent": 65},
+        "T200": {"level_percent": 25},
+        "T300": {"level_percent": 40},
+        "T400": {"level_percent": 60}
       }
     },
     {
       "filename": "tank_level_variant_12.png",
       "tank_levels": {
-        "T100": {"level_percent": 70, "measure_fill_line_at_percent": 70},
-        "T200": {"level_percent": 40, "measure_fill_line_at_percent": 40},
-        "T300": {"level_percent": 48, "measure_fill_line_at_percent": 48},
-        "T400": {"level_percent": 60, "measure_fill_line_at_percent": 60}
+        "T100": {"level_percent": 70},
+        "T200": {"level_percent": 40},
+        "T300": {"level_percent": 48},
+        "T400": {"level_percent": 60}
       }
     },
     {
       "filename": "tank_level_variant_13.png",
       "tank_levels": {
-        "T100": {"level_percent": 70, "measure_fill_line_at_percent": 70},
-        "T200": {"level_percent": 40, "measure_fill_line_at_percent": 40},
-        "T300": {"level_percent": 50, "measure_fill_line_at_percent": 50},
-        "T400": {"level_percent": 65, "measure_fill_line_at_percent": 65}
+        "T100": {"level_percent": 70},
+        "T200": {"level_percent": 40},
+        "T300": {"level_percent": 50},
+        "T400": {"level_percent": 65}
       }
     },
     {
       "filename": "tank_level_variant_14.png",
       "tank_levels": {
-        "T100": {"level_percent": 20, "measure_fill_line_at_percent": 20},
-        "T200": {"level_percent": 45, "measure_fill_line_at_percent": 45},
-        "T300": {"level_percent": 65, "measure_fill_line_at_percent": 65},
-        "T400": {"level_percent": 80, "measure_fill_line_at_percent": 80}
+        "T100": {"level_percent": 20},
+        "T200": {"level_percent": 45},
+        "T300": {"level_percent": 65},
+        "T400": {"level_percent": 80}
       }
     },
     {
       "filename": "tank_level_variant_15.png",
       "tank_levels": {
-        "T100": {"level_percent": 26, "measure_fill_line_at_percent": 26},
-        "T200": {"level_percent": 50, "measure_fill_line_at_percent": 50},
-        "T300": {"level_percent": 68, "measure_fill_line_at_percent": 68},
-        "T400": {"level_percent": 28, "measure_fill_line_at_percent": 28}
+        "T100": {"level_percent": 26},
+        "T200": {"level_percent": 50},
+        "T300": {"level_percent": 68},
+        "T400": {"level_percent": 28}
       }
     },
     {
       "filename": "tank_level_variant_16.png",
       "tank_levels": {
-        "T100": {"level_percent": 35, "measure_fill_line_at_percent": 35},
-        "T200": {"level_percent": 60, "measure_fill_line_at_percent": 60},
-        "T300": {"level_percent": 70, "measure_fill_line_at_percent": 70},
-        "T400": {"level_percent": 38, "measure_fill_line_at_percent": 38}
+        "T100": {"level_percent": 35},
+        "T200": {"level_percent": 60},
+        "T300": {"level_percent": 70},
+        "T400": {"level_percent": 38}
       }
     },
     {
       "filename": "tank_level_variant_17.png",
       "tank_levels": {
-        "T100": {"level_percent": 42, "measure_fill_line_at_percent": 42},
-        "T200": {"level_percent": 65, "measure_fill_line_at_percent": 65},
-        "T300": {"level_percent": 25, "measure_fill_line_at_percent": 25},
-        "T400": {"level_percent": 35, "measure_fill_line_at_percent": 35}
+        "T100": {"level_percent": 42},
+        "T200": {"level_percent": 65},
+        "T300": {"level_percent": 25},
+        "T400": {"level_percent": 35}
       }
     },
     {
       "filename": "tank_level_variant_18.png",
       "tank_levels": {
-        "T100": {"level_percent": 55, "measure_fill_line_at_percent": 55},
-        "T200": {"level_percent": 70, "measure_fill_line_at_percent": 70},
-        "T300": {"level_percent": 35, "measure_fill_line_at_percent": 35},
-        "T400": {"level_percent": 50, "measure_fill_line_at_percent": 50}
+        "T100": {"level_percent": 55},
+        "T200": {"level_percent": 70},
+        "T300": {"level_percent": 35},
+        "T400": {"level_percent": 50}
       }
     },
     {
       "filename": "tank_level_variant_19.png",
       "tank_levels": {
-        "T100": {"level_percent": 70, "measure_fill_line_at_percent": 70},
-        "T200": {"level_percent": 35, "measure_fill_line_at_percent": 35},
-        "T300": {"level_percent": 50, "measure_fill_line_at_percent": 50},
-        "T400": {"level_percent": 60, "measure_fill_line_at_percent": 60}
+        "T100": {"level_percent": 70},
+        "T200": {"level_percent": 35},
+        "T300": {"level_percent": 50},
+        "T400": {"level_percent": 60}
       }
     },
     {
       "filename": "tank_level_variant_20.png",
       "tank_levels": {
-        "T100": {"level_percent": 75, "measure_fill_line_at_percent": 75},
-        "T200": {"level_percent": 40, "measure_fill_line_at_percent": 40},
-        "T300": {"level_percent": 60, "measure_fill_line_at_percent": 60},
-        "T400": {"level_percent": 66, "measure_fill_line_at_percent": 66}
+        "T100": {"level_percent": 75},
+        "T200": {"level_percent": 40},
+        "T300": {"level_percent": 60},
+        "T400": {"level_percent": 66}
       }
     }
   ]

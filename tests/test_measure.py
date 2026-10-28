@@ -210,7 +210,9 @@ def test_top_view_tanks_classify_requested_colors(image_path: Path):
         assert not warning
 
 
-def _synthetic_fill_image(levels: dict[str, float]) -> np.ndarray:
+def _synthetic_fill_image(
+    levels: dict[str, float], air=(185, 185, 185), liquid=(45, 110, 190)
+) -> np.ndarray:
     """Build simple liquid-line fixtures for the calibrated scanline method."""
     # Synthetic fill images make the expected line position exact, which lets
     # the test evaluate the scanline math independently of AI-rendered images.
@@ -221,9 +223,40 @@ def _synthetic_fill_image(levels: dict[str, float]) -> np.ndarray:
         line = round(y2 - (level / 100.0) * (y2 - y1 - 1))
         # Empty tank body is gray; liquid is a distinct BGR color below the
         # horizontal boundary so the detector has one dominant transition.
-        image[y1:y2, x1:x2] = (185, 185, 185)
-        image[line:y2, x1:x2] = (45, 110, 190)
+        image[y1:y2, x1:x2] = air
+        image[line:y2, x1:x2] = liquid
     return image
+
+
+def test_fill_line_detects_hue_only_transition():
+    """Each channel is smoothed separately, so equal-brightness lines still show."""
+    # Gray air and this liquid have the same mean channel value. Mixing the
+    # channels during smoothing weakens this faint line below the detector's
+    # minimum strength, so it would be reported as no line.
+    expected = {"T100": 30.0, "T200": 50.0, "T300": 60.0, "T400": 70.0}
+    measured = tank_fill_levels(
+        _synthetic_fill_image(expected, air=(128, 128, 128), liquid=(112, 128, 144))
+    )
+    for tank, level in expected.items():
+        assert measured[tank] == pytest.approx(level, abs=3.0)
+
+
+@pytest.mark.parametrize("level", [3.0, 95.0])
+def test_fill_levels_report_no_line_outside_search_window(level: float):
+    """A nearly empty or nearly full tank has no visible line to measure."""
+    # Returning a number here would report an empty tank as 87.5% full.
+    measured = tank_fill_levels(_synthetic_fill_image(dict.fromkeys(_FILL_ROIS, level)))
+    assert measured == dict.fromkeys(_FILL_ROIS)
+
+
+def test_tanks_ignores_headspace_above_liquid_line():
+    """Color is read below the detected liquid line, not from empty tank."""
+    # At 40% full most of the original color box is air above the liquid.
+    image = _synthetic_fill_image(
+        dict.fromkeys(_FILL_ROIS, 40.0), air=(230, 230, 230), liquid=(200, 60, 20)
+    )
+    for tank, color in tanks(image, datetime(2026, 9, 22)).colors.items():
+        assert color == (20.0, 60.0, 200.0), tank
 
 
 def test_fill_manifest_is_complete_and_calibrated():
@@ -237,9 +270,8 @@ def test_fill_manifest_is_complete_and_calibrated():
         # Only the nested level record is needed here; tank-key coverage was
         # already verified by the set comparison above.
         for level in record["tank_levels"].values():
-            assert set(level) == {"level_percent", "measure_fill_line_at_percent"}
+            assert set(level) == {"level_percent"}
             assert 0.0 <= level["level_percent"] <= 100.0
-            assert 0.0 <= level["measure_fill_line_at_percent"] <= 100.0
             assert (FILL_IMAGES / record["filename"]).exists()
 
 
@@ -289,5 +321,5 @@ def test_generated_fill_images_are_measurable(record: dict[str, object]):
     measured = tank_fill_levels(image)
     assert set(measured) == EXPECTED_FILL_TANKS
     for tank, measured_level in measured.items():
-        target = record["tank_levels"][tank]["measure_fill_line_at_percent"]
+        target = record["tank_levels"][tank]["level_percent"]
         assert measured_level == pytest.approx(target, abs=TANK_FILL_WARN_PERCENT)

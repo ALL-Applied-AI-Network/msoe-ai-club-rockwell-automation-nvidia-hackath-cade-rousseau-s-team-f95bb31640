@@ -10,6 +10,5 @@ __pycache__/
 .serena
 docs/superpowers
 .env
-AGENTS.md
-graphify-out/
 .DS_Store
+/graphify-out

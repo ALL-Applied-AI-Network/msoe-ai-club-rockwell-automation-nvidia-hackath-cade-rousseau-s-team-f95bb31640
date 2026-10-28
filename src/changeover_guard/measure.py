@@ -55,6 +55,23 @@ _FILL_ROIS = {
     "T400": (510, 318, 578, 390),
 }
 _FILL_TANKS = tuple(_FILL_ROIS)
+# At 640x480 the weakest liquid line in the generated fill fixtures peaks near
+# 5.3, while the strongest non-line edge in a typical tank body is about 3.6.
+# ponytail: tuned on generated fixtures only; recheck on real tank_level frames.
+_MIN_LINE_STRENGTH = 5.0
+
+
+def _is_top_view(shape: tuple[int, ...]) -> bool:
+    """Select calibration by aspect ratio.
+
+    Top-view fixtures are about 2.16:1 while the real tank_level and generated
+    front-view frames are 4:3.
+    """
+    height, width = shape[:2]
+    aspect_ratio = width / height
+    top_view_aspect = _REFERENCE_SIZE[0] / _REFERENCE_SIZE[1]
+    real_view_aspect = _REAL_REFERENCE_SIZE[0] / _REAL_REFERENCE_SIZE[1]
+    return abs(aspect_ratio - top_view_aspect) <= abs(aspect_ratio - real_view_aspect)
 
 
 def tank_rois(shape: tuple[int, ...]) -> dict[str, tuple[int, int, int, int]]:
@@ -65,13 +82,7 @@ def tank_rois(shape: tuple[int, ...]) -> dict[str, tuple[int, int, int, int]]:
         raise ValueError("shape must contain positive height and width")
 
     height, width = shape[:2]
-    # Select calibration by aspect ratio.  Top-view fixtures are about 2.16:1
-    # while the real tank_level and generated front-view frames are 4:3.
-    # This keeps all three image sets on their matching camera geometry.
-    aspect_ratio = width / height
-    top_view_aspect = _REFERENCE_SIZE[0] / _REFERENCE_SIZE[1]
-    real_view_aspect = _REAL_REFERENCE_SIZE[0] / _REAL_REFERENCE_SIZE[1]
-    if abs(aspect_ratio - top_view_aspect) <= abs(aspect_ratio - real_view_aspect):
+    if _is_top_view(shape):
         roi_definitions, reference_size = _TANK_ROIS, _REFERENCE_SIZE
     else:
         roi_definitions, reference_size = _REAL_TANK_ROIS, _REAL_REFERENCE_SIZE
@@ -127,6 +138,34 @@ def fill_line_row(roi: tuple[int, int, int, int], level_percent: float) -> int:
     return round(y2 - 1 - (bounded_percent / 100.0) * (y2 - y1 - 1))
 
 
+def liquid_rois(image: np.ndarray) -> dict[str, tuple[int, int, int, int]]:
+    """Return the color ROIs with headspace above the liquid line removed.
+
+    tanks() measures these boxes, and the dashboard draws them, so the overlay
+    always shows the pixels behind each color reading.
+    """
+    rois = tank_rois(image.shape)
+    if _is_top_view(image.shape):
+        # Fill ROIs are calibrated for the 4:3 camera only.
+        return rois
+
+    levels = tank_fill_levels(image)
+    fill = fill_rois(image.shape)
+    # Skip a few rows below the line for the meniscus, but always keep a few
+    # rows at the bottom of the box so a low tank still has pixels to read.
+    scale = image.shape[0] / _FILL_REFERENCE_SIZE[1]
+    margin, min_rows = round(3 * scale), max(1, round(4 * scale))
+    clipped = {}
+    for tank, (x1, y1, x2, y2) in rois.items():
+        if levels[tank] is not None:
+            # ponytail: with no visible line the box is either all liquid or
+            # all air; a nearly empty tank still reads its bottom rows as air.
+            line = fill_line_row(fill[tank], levels[tank])
+            y1 = min(max(y1, line + margin), y2 - min_rows)
+        clipped[tank] = (x1, y1, x2, y2)
+    return clipped
+
+
 def _tank_crop(image: np.ndarray, roi: tuple[int, int, int, int]) -> np.ndarray:
     """Extract an already-scaled calibrated ROI."""
     # ROIs use the conventional OpenCV order (left, top, right, bottom).
@@ -169,12 +208,12 @@ def tanks(image: np.ndarray, timestamp: datetime) -> TankReading:
 
     # Only the active recipe tanks are returned.  T300 remains physically
     # visible but is out of service and must not enter recipe color reasoning.
-    rois = tank_rois(image.shape)
+    rois = liquid_rois(image)
     colors = {tank: _robust_rgb(_tank_crop(image, rois[tank])) for tank in rois}
     return TankReading(timestamp=timestamp, colors=colors)
 
 
-def _fill_line_percent(crop: np.ndarray) -> float:
+def _fill_line_percent(crop: np.ndarray) -> float | None:
     """Find a tank's horizontal liquid line and return percent full.
 
     UPDATED: This is the suggested scanline method.  It samples both side
@@ -204,7 +243,8 @@ def _fill_line_percent(crop: np.ndarray) -> float:
     # A row median suppresses small reflections and equipment texture while
     # retaining the broad horizontal transition made by the liquid surface.
     row_color = np.median(sample.astype(np.float32), axis=1)
-    row_color = cv2.GaussianBlur(row_color.reshape(-1, 1), (1, 7), 0).reshape(-1, 3)
+    # Shape (rows, 1, 3) so each channel is smoothed down the rows separately.
+    row_color = cv2.GaussianBlur(row_color.reshape(-1, 1, 3), (1, 7), 0).reshape(-1, 3)
     transition = np.linalg.norm(np.diff(row_color, axis=0), axis=1)
 
     # Ignore the ROI margins where tank rims and the lower fixture create
@@ -214,19 +254,25 @@ def _fill_line_percent(crop: np.ndarray) -> float:
     last = min(height - 2, round(height * 0.88))
     if first >= last:
         raise ValueError("fill ROI has no valid line-search range")
-    line_offset = first + int(np.argmax(transition[first:last]))
+    window = transition[first:last]
+    if window.max() < _MIN_LINE_STRENGTH:
+        # No line inside the search window: the tank is nearly empty, nearly
+        # full, or blocked. Report unknown rather than the window edge.
+        return None
+    line_offset = first + int(np.argmax(window))
     # Normalize upward from the bottom: a line at the bottom is 0% full and a
     # line at the top is 100% full, matching the JSON fixture convention.
     return round(100.0 * (height - 1 - line_offset) / (height - 1), 1)
 
 
-def tank_fill_levels(image: np.ndarray) -> dict[str, float]:
+def tank_fill_levels(image: np.ndarray) -> dict[str, float | None]:
     """Measure the percent-full level of each tank from a BGR image.
 
     The result is keyed by tank number and reports the liquid line as a
     percentage of the calibrated tank body height, measured upward from the
     bottom.  This keeps fill measurement independent from the recipe/color
-    measurement API and includes T300 for equipment monitoring.
+    measurement API and includes T300 for equipment monitoring.  A tank is
+    None when no liquid line is visible (nearly empty or nearly full).
     """
     # Use the same input validation as the color reader so callers receive a
     # clear error instead of a confusing OpenCV failure.
