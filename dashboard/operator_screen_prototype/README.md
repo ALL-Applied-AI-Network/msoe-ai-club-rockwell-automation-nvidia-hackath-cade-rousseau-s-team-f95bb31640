@@ -4,11 +4,11 @@ This is a standalone Streamlit UI prototype with simulated data. It does not con
 
 ## Run
 
-From a terminal with Python 3.11+:
+From a terminal with Python 3.11+ in the root directory:
 
 ```bash
 pip install streamlit
-streamlit run operator_screen.py
+python -m streamlit run dashboard/operator_screen_prototype/operator_screen.py 
 ```
 
 ## Integration plan
