@@ -11,7 +11,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from changeover_guard.contracts import COLOR_WARN_DE, delta_e
+from changeover_guard.contracts import COLOR_WARN_DE, Recipe, delta_e
 from changeover_guard.dataset import vial_labels
 
 ROOT = Path(__file__).parents[1]
@@ -20,7 +20,8 @@ BOX = (300, 335, 324, 370)                   # x0, y0, x1, y1 inside the liquid,
 OFFSETS_S = (-0.6, -0.45, -0.3)              # before end_s: full vial, cart not moving yet
 
 
-def measure(cap, end_s):
+def measure(cap: cv2.VideoCapture, end_s: float) -> np.ndarray:
+    """Median RGB inside BOX over a few frames just before a fill ends."""
     x0, y0, x1, y1 = BOX
     px = []
     for off in OFFSETS_S:
@@ -32,22 +33,25 @@ def measure(cap, end_s):
     return np.median(np.concatenate(px), axis=0)
 
 
-def design(recipes):
+def design(recipes: list[Recipe]) -> np.ndarray:
+    """Beer-Lambert design matrix: one row [1, -c200, -c400] per recipe."""
     c = [[1, -r.ml.get("T200", 0) / sum(r.ml.values()), -r.ml.get("T400", 0) / sum(r.ml.values())]
          for r in recipes]
     return np.array(c)
 
 
-def fit(recipes, rgb):
+def fit(recipes: list[Recipe], rgb: np.ndarray) -> np.ndarray:
+    """Least-squares Beer-Lambert coefficients from measured clean-vial colors."""
     coef, *_ = np.linalg.lstsq(design(recipes), np.log(np.clip(rgb, 1, 255) / 255), rcond=None)
     return coef                              # rows: log_i0, k200, k400; columns: R, G, B
 
 
-def predict(coef, recipes):
+def predict(coef: np.ndarray, recipes: list[Recipe]) -> np.ndarray:
+    """Predicted RGB (0-255) per recipe."""
     return np.exp(design(recipes) @ coef) * 255
 
 
-def main():
+def main() -> None:
     cap = cv2.VideoCapture(str(VIDEO))
     clean = [(r, end) for v, r, _, end in vial_labels(ROOT / "data") if v % 3 == 0]
     recipes = [r for r, _ in clean]

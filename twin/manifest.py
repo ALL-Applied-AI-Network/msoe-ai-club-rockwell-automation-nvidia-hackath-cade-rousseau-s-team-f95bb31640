@@ -21,7 +21,8 @@ CARRY_ML = (0, 1, 2, 4)
 COLUMNS = ["vial", "recipe_id", "t100_ml", "t200_ml", "t400_ml", "prev_recipe_id", "carry_ml", "light", "r", "g", "b"]
 
 
-def recipes():
+def recipes() -> list[Recipe]:
+    """Every recipe on a 10 mL grid that passes Recipe.validate(), ids from 100."""
     out = []
     for i, (a, b, c) in enumerate(itertools.product(range(0, 90, 10), repeat=3)):
         ml = {t: v for t, v in zip(("T100", "T200", "T400"), (a, b, c)) if v}
@@ -34,18 +35,20 @@ def recipes():
     return out
 
 
-def dye(r):                                  # (c200, c400) fractions of the vial
+def dye(r: Recipe) -> np.ndarray:
+    """(c200, c400): each dye's fraction of the vial."""
     total = sum(r.ml.values())
     return np.array([r.ml.get("T200", 0), r.ml.get("T400", 0)]) / total
 
 
-def color(cal, c):
+def color(cal: dict, c: np.ndarray) -> np.ndarray:
+    """Camera RGB (0-255) of dye fractions c, from calibration.json's Beer-Lambert fit."""
     log_i0 = np.log(np.array(cal["i0_rgb"]) / 255)
     k = np.array([cal["absorb_T200"], cal["absorb_T400"]])
     return np.clip(np.exp(log_i0 - c @ k) * 255, 0, 255)
 
 
-def main():
+def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--limit", type=int, default=None, help="max vials")
     ap.add_argument("--seed", type=int, default=0)
