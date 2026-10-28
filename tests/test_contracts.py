@@ -1,6 +1,7 @@
 import pytest
 
-from changeover_guard.contracts import COLOR_WARN_DE, Recipe, delta_e
+from changeover_guard import contracts
+from changeover_guard.contracts import COLOR_WARN_DE, Recipe, color_difference, delta_e
 
 VIDEO5 = {5: {"T100": 10, "T200": 10, "T400": 10}, 6: {"T100": 30, "T200": 10}, 7: {"T100": 20, "T400": 50}, 8: {"T100": 20, "T200": 20, "T400": 20}, 9: {"T100": 10, "T200": 35, "T400": 35}, 10: {"T100": 45, "T200": 15, "T400": 15}, 11: {"T100": 10, "T200": 10, "T400": 50}, 12: {"T100": 10, "T200": 50, "T400": 10}, 13: {"T200": 50, "T400": 20}, 14: {"T100": 60, "T400": 10}}
 
@@ -29,3 +30,17 @@ def test_delta_e_orange_blue():
 
 def test_delta_e_black_white():
     assert delta_e((0, 0, 0), (255, 255, 255)) == pytest.approx(100, abs=0.5)
+
+
+def test_color_warning_uses_shared_contract_threshold(monkeypatch):
+    """The warning decision follows COLOR_WARN_DE, including its boundary."""
+    actual, measured = (245, 140, 20), (205, 115, 5)
+    difference = delta_e(actual, measured)
+
+    # Moving the contract boundary across the same measured difference must
+    # change the result; this catches a hidden hard-coded warning threshold.
+    monkeypatch.setattr(contracts, "COLOR_WARN_DE", difference)
+    assert color_difference(actual, measured) == (difference, True)
+
+    monkeypatch.setattr(contracts, "COLOR_WARN_DE", difference + 0.01)
+    assert color_difference(actual, measured) == (difference, False)
