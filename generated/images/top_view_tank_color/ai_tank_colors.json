@@ -1,0 +1,164 @@
+{
+  "images": [
+    {
+      "filename": "ai_tank_variant_01.png",
+      "requested_rgb": {
+        "T100": [123, 196, 195],
+        "T200": [222, 108, 1],
+        "T400": [0, 48, 187]
+      }
+    },
+    {
+      "filename": "ai_tank_variant_02.png",
+      "requested_rgb": {
+        "T100": [200, 184, 98],
+        "T200": [197, 59, 7],
+        "T400": [1, 29, 137]
+      }
+    },
+    {
+      "filename": "ai_tank_variant_03.png",
+      "requested_rgb": {
+        "T100": [151, 204, 142],
+        "T200": [218, 102, 1],
+        "T400": [0, 52, 177]
+      }
+    },
+    {
+      "filename": "ai_tank_variant_04.png",
+      "requested_rgb": {
+        "T100": [205, 194, 115],
+        "T200": [178, 97, 17],
+        "T400": [13, 52, 147]
+      }
+    },
+    {
+      "filename": "ai_tank_variant_05.png",
+      "requested_rgb": {
+        "T100": [132, 196, 214],
+        "T200": [197, 52, 7],
+        "T400": [3, 27, 141]
+      }
+    },
+    {
+      "filename": "ai_tank_variant_06.png",
+      "requested_rgb": {
+        "T100": [181, 181, 179],
+        "T200": [196, 142, 2],
+        "T400": [1, 129, 164]
+      }
+    },
+    {
+      "filename": "ai_tank_variant_07.png",
+      "requested_rgb": {
+        "T100": [180, 158, 203],
+        "T200": [212, 101, 1],
+        "T400": [73, 12, 133]
+      }
+    },
+    {
+      "filename": "ai_tank_variant_08.png",
+      "requested_rgb": {
+        "T100": [138, 203, 200],
+        "T200": [187, 80, 6],
+        "T400": [2, 116, 137]
+      }
+    },
+    {
+      "filename": "ai_tank_variant_09.png",
+      "requested_rgb": {
+        "T100": [179, 180, 173],
+        "T200": [192, 28, 20],
+        "T400": [0, 56, 179]
+      }
+    },
+    {
+      "filename": "ai_tank_variant_10.png",
+      "requested_rgb": {
+        "T100": [138, 193, 126],
+        "T200": [206, 97, 3],
+        "T400": [90, 19, 135]
+      }
+    },
+    {
+      "filename": "ai_tank_variant_11.png",
+      "requested_rgb": {
+        "T100": [126, 178, 220],
+        "T200": [228, 116, 3],
+        "T400": [169, 27, 95]
+      }
+    },
+    {
+      "filename": "ai_tank_variant_12.png",
+      "requested_rgb": {
+        "T100": [204, 192, 108],
+        "T200": [202, 100, 5],
+        "T400": [18, 117, 53]
+      }
+    },
+    {
+      "filename": "ai_tank_variant_13.png",
+      "requested_rgb": {
+        "T100": [153, 189, 208],
+        "T200": [183, 91, 10],
+        "T400": [1, 129, 205]
+      }
+    },
+    {
+      "filename": "ai_tank_variant_14.png",
+      "requested_rgb": {
+        "T100": [140, 190, 187],
+        "T200": [137, 48, 15],
+        "T400": [20, 44, 116]
+      }
+    },
+    {
+      "filename": "ai_tank_variant_15.png",
+      "requested_rgb": {
+        "T100": [140, 187, 133],
+        "T200": [204, 62, 9],
+        "T400": [1, 103, 128]
+      }
+    },
+    {
+      "filename": "ai_tank_variant_16.png",
+      "requested_rgb": {
+        "T100": [164, 164, 159],
+        "T200": [212, 97, 4],
+        "T400": [30, 17, 133]
+      }
+    },
+    {
+      "filename": "ai_tank_variant_17.png",
+      "requested_rgb": {
+        "T100": [143, 199, 156],
+        "T200": [213, 109, 4],
+        "T400": [7, 118, 123]
+      }
+    },
+    {
+      "filename": "ai_tank_variant_18.png",
+      "requested_rgb": {
+        "T100": [207, 195, 115],
+        "T200": [207, 62, 4],
+        "T400": [29, 127, 130]
+      }
+    },
+    {
+      "filename": "ai_tank_variant_19.png",
+      "requested_rgb": {
+        "T100": [131, 200, 194],
+        "T200": [213, 113, 1],
+        "T400": [0, 64, 183]
+      }
+    },
+    {
+      "filename": "ai_tank_variant_20.png",
+      "requested_rgb": {
+        "T100": [152, 196, 138],
+        "T200": [190, 55, 6],
+        "T400": [1, 102, 84]
+      }
+    }
+  ]
+}

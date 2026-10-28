@@ -11,3 +11,4 @@ __pycache__/
 docs/superpowers
 .env
 .DS_Store
+/graphify-out

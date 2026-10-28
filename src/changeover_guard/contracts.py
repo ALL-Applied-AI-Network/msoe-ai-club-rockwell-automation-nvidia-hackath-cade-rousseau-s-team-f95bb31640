@@ -11,6 +11,9 @@ MAX_VIAL_ML, MIN_COMPONENT_ML, MAX_T200_ML, QUEUE_SIZE = 80, 10, 50, 3
 # Starting thresholds; tuned on synthetic data in week 2
 COLOR_WARN_DE = 10.0        # CIEDE2000 distance that counts as "off color"
 FILL_TOL_ML = 5.0
+# Tank-camera fill readings are percentages of tank height, so they need a
+# separate tolerance from the vial-volume tolerance above.
+TANK_FILL_WARN_PERCENT = 5.0
 
 RGB = tuple[float, float, float]             # sRGB, 0-255
 
@@ -72,3 +75,11 @@ class Advice:               # advise -> dashboard
 def delta_e(a: RGB, b: RGB) -> float:    # CIEDE2000 via scikit-image
     lab = [rgb2lab(np.asarray(c, dtype=float).reshape(1, 1, 3) / 255) for c in (a, b)]
     return float(deltaE_ciede2000(*lab).item())
+
+
+def color_difference(actual: RGB, measured: RGB) -> tuple[float, bool]:
+    """Return the color difference and whether it reaches the shared warning limit."""
+    # Use one contract threshold for dashboard warnings and tests. A difference
+    # exactly on the boundary is off-color, matching the existing UI behavior.
+    difference = delta_e(actual, measured)
+    return difference, difference >= COLOR_WARN_DE
