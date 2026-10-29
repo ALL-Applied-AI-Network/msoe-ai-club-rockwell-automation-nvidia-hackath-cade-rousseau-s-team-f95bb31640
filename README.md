@@ -69,6 +69,18 @@ cd web && bun install && bun dev         # operator UI on :3000, in a second ter
 
 For a demo, `cd web && bun run build` once; then `uv run uvicorn api.main:app` alone serves the UI and API at http://localhost:8000. See `web/README.md`. The Streamlit tools in `dashboard/` still run with `uv run streamlit run dashboard/app.py`.
 
+### Tank color initialization
+
+The operator UI opens on **Tank Initialization**. Select a PNG/JPEG tank top view,
+review or adjust the four liquid regions, and save the CIELAB baselines for
+`T_100`, `T_200`, `T_300`, and `T_400`. Confirmed snapshots persist in ignored
+`outputs/baselines/` and can be downloaded as JSON. This flow works without the
+event dataset. T_300 is recorded but remains unavailable for recipes.
+
+See [MODEL_PROPOSAL.md](MODEL_PROPOSAL.md) for the proposed volume-aware optical
+mixing model and impurity index driven by the **previous recipe run**. Model
+calibration and prediction are proposed next steps; the baseline is implemented.
+
 ### Who owns what
 
 | Workstream | Owners | Lives in |

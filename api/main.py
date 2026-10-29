@@ -17,6 +17,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 
+from api.baselines import router as baseline_router
+
 from api.schemas import (
     FrameOut,
     InspectionOut,
@@ -41,6 +43,7 @@ LABELED_VIDEO = 5                            # the only video with recipe labels
 BEFORE_END_S = 0.6                           # full vial, cart not moving yet
 
 app = FastAPI(title="Changeover Guard API")
+app.include_router(baseline_router)
 
 
 @cache

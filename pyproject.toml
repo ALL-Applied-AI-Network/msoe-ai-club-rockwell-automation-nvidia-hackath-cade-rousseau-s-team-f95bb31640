@@ -6,6 +6,7 @@ dependencies = [
     "numpy",
     "pandas",
     "opencv-python-headless",
+    "pillow",
     "scikit-image",
     "streamlit",
     "fastapi>=0.162.0",
