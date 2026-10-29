@@ -8,10 +8,16 @@ dependencies = [
     "opencv-python-headless",
     "scikit-image",
     "streamlit",
+    "fastapi>=0.162.0",
+    "uvicorn>=0.54.0",
 ]
 
 [dependency-groups]
-dev = ["pytest", "ruff"]
+dev = [
+    "httpx>=0.28.1",
+    "pytest",
+    "ruff",
+]
 
 [build-system]
 requires = ["hatchling"]
