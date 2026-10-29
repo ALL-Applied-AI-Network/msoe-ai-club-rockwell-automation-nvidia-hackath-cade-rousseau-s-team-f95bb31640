@@ -12,3 +12,4 @@ docs/superpowers
 .env
 .DS_Store
 /graphify-out
+dashboard/operator_screen_prototype/inspection_result.json

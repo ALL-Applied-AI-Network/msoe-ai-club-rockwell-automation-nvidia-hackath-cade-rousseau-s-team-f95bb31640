@@ -1,7 +1,11 @@
 """Changeover Guard operator mockup. Read-only simulated data; no PLC connection."""
 from pathlib import Path
-import json
+
 import streamlit as st
+
+# Streamlit puts this script's directory on sys.path, so import the helper
+# beside this file rather than requiring the project root to be importable.
+from operator_result import load_result
 
 st.set_page_config(page_title="Changeover Guard — Operator", layout="wide")
 # Explicit light theme colors prevent white-on-white text when the user's
@@ -43,19 +47,18 @@ inspection, queue, evidence = st.tabs(["Vial Inspection", "Recipe Queue", "Camer
 
 with inspection:
     left, right = st.columns([3, 1])
-    with left:
-        scenario = st.selectbox("Select demonstration case", list(SCENARIOS))
     with right:
         use_json = st.checkbox("Use JSON model output", value=False, help="Reads inspection_result.json next to this file when present")
+    with left:
+        scenario = st.selectbox("Select demonstration case", list(SCENARIOS), disabled=use_json)
     result = SCENARIOS[scenario].copy()
     if use_json:
         try:
-            incoming = json.loads(LIVE_RESULT_PATH.read_text(encoding="utf-8"))
-            if not isinstance(incoming, dict):
-                raise ValueError("JSON root must be an object")
-            result.update({k: v for k, v in incoming.items() if k in result})
+            result, ignored = load_result(LIVE_RESULT_PATH)
             st.info("Displaying local JSON output. This is not a verified live machine connection.")
-        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            if ignored:
+                st.caption(f"Ignored unknown JSON keys: {', '.join(ignored)}")
+        except (OSError, ValueError, TypeError) as exc:
             st.warning(f"Could not load model output ({exc}). Showing demonstration data.")
     failed = str(result["status"]).upper() != "PASS"
     st.markdown('<div class="notice">⚠ INSPECTION FLAGGED — REVIEW REQUIRED</div>' if failed else '<div class="ok">✓ INSPECTION PASSED</div>', unsafe_allow_html=True)
@@ -68,11 +71,11 @@ with inspection:
     c1, c2 = st.columns(2)
     with c1:
         st.subheader("Expected vial color")
-        st.color_picker("Recipe target (illustrative)", result["expected_hex"], disabled=True, key=f"expected_{scenario}")
+        st.color_picker("Recipe target (illustrative)", result["expected_hex"], disabled=True)
         st.write(result["expected"])
     with c2:
         st.subheader("Observed vial color")
-        st.color_picker("Camera result (illustrative)", result["observed_hex"], disabled=True, key=f"observed_{scenario}")
+        st.color_picker("Camera result (illustrative)", result["observed_hex"], disabled=True)
         st.write(result["observed"])
     st.markdown("**Likely cause / explanation**")
     if failed:
@@ -102,10 +105,10 @@ with queue:
     l, r = st.columns(2)
     with l:
         st.markdown("#### Original order")
-        st.dataframe([{"Slot": i+1, "Recipe": recipe} for i, recipe in enumerate(original)], hide_index=True, use_container_width=True)
+        st.dataframe([{"Slot": i+1, "Recipe": recipe} for i, recipe in enumerate(original)], hide_index=True, width="stretch")
     with r:
         st.markdown("#### Example grouped order")
-        st.dataframe([{"Slot": i+1, "Recipe": recipe} for i, recipe in enumerate(suggested)], hide_index=True, use_container_width=True)
+        st.dataframe([{"Slot": i+1, "Recipe": recipe} for i, recipe in enumerate(suggested)], hide_index=True, width="stretch")
     st.info("**Goal:** Reduce predicted discoloration during recipe transitions. The optimization model will supply a proposed order and any estimated improvement once integrated.")
     st.markdown("**Operating constraints**")
     st.write("Maximum 80 mL per vial; selected components should be at least 10 mL; T-200 must not exceed 50 mL; T-300 must not be used.")
@@ -119,7 +122,7 @@ with evidence:
         for i in range(0, len(files), 3):
             cols = st.columns(3)
             for col, file in zip(cols, files[i:i+3]):
-                col.image(file, caption=file.name, use_container_width=True)
+                col.image(file, caption=file.name, width="stretch")
     else:
         st.info("No images selected. For the demo, load vial_fill frames of Vials 7–9 or synchronized tank/cap images.")
     st.markdown("**Evidence checklist**")
