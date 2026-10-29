@@ -64,10 +64,10 @@ Download the Fluid Mixing dataset from the [event guide link](https://msoe-maic.
 ```bash
 uv run pytest
 uv run uvicorn api.main:app --reload     # API on :8000 (docs at /docs)
-cd web && npm install && npm run dev     # operator UI on :3000, in a second terminal
+cd web && bun install && bun dev         # operator UI on :3000, in a second terminal
 ```
 
-For a demo, `cd web && npm run build` once; then `uv run uvicorn api.main:app` alone serves the UI and API at http://localhost:8000. See `web/README.md`. The Streamlit tools in `dashboard/` still run with `uv run streamlit run dashboard/app.py`.
+For a demo, `cd web && bun run build` once; then `uv run uvicorn api.main:app` alone serves the UI and API at http://localhost:8000. See `web/README.md`. The Streamlit tools in `dashboard/` still run with `uv run streamlit run dashboard/app.py`.
 
 ### Who owns what
 

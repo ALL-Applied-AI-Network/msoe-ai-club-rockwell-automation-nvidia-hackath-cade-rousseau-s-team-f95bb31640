@@ -14,8 +14,8 @@ uv run pytest                             # all tests (testpaths = tests/)
 uv run pytest tests/test_measure.py::test_name   # single test
 uv run ruff check .                       # lint (no ruff config; defaults)
 uv run uvicorn api.main:app --reload     # FastAPI backend on :8000; also serves web/out once built
-cd web && npm run dev                     # Next.js operator UI on :3000 (proxies /api to :8000)
-cd web && npm run build                   # static export to web/out
+cd web && bun dev                        # Next.js operator UI on :3000 (proxies /api to :8000)
+cd web && bun run build                  # static export to web/out
 uv run streamlit run dashboard/app.py     # older Streamlit dashboard and ROI calibration tools
 
 # Digital twin pipeline (run from repo root)

@@ -8,7 +8,7 @@ Two terminals, from the repo root:
 
 ```bash
 uv run uvicorn api.main:app --reload     # API on :8000 (endpoints listed at /docs)
-cd web && npm install && npm run dev     # UI on :3000; /api calls are forwarded to :8000
+cd web && bun install && bun dev         # UI on :3000; /api calls are forwarded to :8000
 ```
 
 The real dataset must be unzipped into `data/` (see the root README).
@@ -16,7 +16,7 @@ The real dataset must be unzipped into `data/` (see the root README).
 ## Demo / deploy
 
 ```bash
-cd web && npm run build                  # static files in web/out
+cd web && bun run build                  # static files in web/out
 uv run uvicorn api.main:app              # serves the UI and the API at http://localhost:8000
 ```
 

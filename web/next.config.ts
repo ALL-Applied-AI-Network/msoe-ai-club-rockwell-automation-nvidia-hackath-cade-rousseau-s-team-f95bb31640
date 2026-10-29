@@ -15,12 +15,12 @@ const base: NextConfig = {
 
 export default function config(phase: string): NextConfig {
   if (phase === PHASE_DEVELOPMENT_SERVER) {
-    // `npm run dev` forwards API calls to `uv run uvicorn api.main:app` on port 8000
+    // `bun dev` forwards API calls to `uv run uvicorn api.main:app` on port 8000
     return {
       ...base,
       rewrites: async () => [{ source: "/api/:path*", destination: "http://localhost:8000/api/:path*" }],
     };
   }
-  // `npm run build` writes static files to out/, which the FastAPI app serves at /
+  // `bun run build` writes static files to out/, which the FastAPI app serves at /
   return { ...base, output: "export" };
 }

@@ -3,7 +3,7 @@
     uv run uvicorn api.main:app --reload     # http://localhost:8000/docs lists every endpoint
 
 Model steps that are still stubs (NotImplementedError) come back with source "pending" and null
-model fields, never with made-up values. Once web/out exists (npm run build), the UI is served at /.
+model fields, never with made-up values. Once web/out exists (bun run build), the UI is served at /.
 """
 import json
 from datetime import timedelta
