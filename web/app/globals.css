@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+/* Fixed light theme, close to the machine HMI (as in Mat's Streamlit prototype). */
+@theme {
+  --color-bg: #eef2f6;
+  --color-ink: #172b3a;
+  --color-muted: #5a6b7a;
+  --color-line: #cfd7df;
+  --color-accent: #125d90;
+  --color-pass: #22824b;
+  --color-pass-soft: #dff3e4;
+  --color-pass-ink: #155a34;
+  --color-flag: #d99815;
+  --color-flag-soft: #fff0ca;
+  --color-flag-ink: #583900;
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+}

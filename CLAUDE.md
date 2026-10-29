@@ -13,7 +13,10 @@ uv sync                                   # install deps (incl. dev: pytest, ruf
 uv run pytest                             # all tests (testpaths = tests/)
 uv run pytest tests/test_measure.py::test_name   # single test
 uv run ruff check .                       # lint (no ruff config; defaults)
-uv run streamlit run dashboard/app.py     # dashboard
+uv run uvicorn api.main:app --reload     # FastAPI backend on :8000; also serves web/out once built
+cd web && bun dev                        # Next.js operator UI on :3000 (proxies /api to :8000)
+cd web && bun run build                  # static export to web/out
+uv run streamlit run dashboard/app.py     # older Streamlit dashboard and ROI calibration tools
 
 # Digital twin pipeline (run from repo root)
 uv run python twin/calibrate.py           # data/ video 5 -> twin/calibration.json (committed)
@@ -30,7 +33,7 @@ graphify update .                         # refresh graphify-out/ code graph (no
 
 The pipeline is a chain of modules in `src/changeover_guard/` whose only coupling is the dataclasses in `contracts.py`:
 
-`dataset.frames()` -> `measure` (`TankReading` / `VialMeasurement`) -> `mixing.predict()` (`Prediction`) -> `advise.check()` / `advise.advise()` (`Check`, `Advice`) -> `dashboard/app.py` and `eval/`.
+`dataset.frames()` -> `measure` (`TankReading` / `VialMeasurement`) -> `mixing.predict()` (`Prediction`) -> `advise.check()` / `advise.advise()` (`Check`, `Advice`) -> `api/main.py` (FastAPI, JSON shapes in `api/schemas.py`) -> `web/` (Next.js), and `eval/`.
 
 - `contracts.py` is the shared interface and also holds the domain constants: usable tanks (`T100`, `T200`, `T400`; T300 is out of service), dispense order, mL limits enforced by `Recipe.validate()`, the color/vial/tank-fill warning thresholds, and CIEDE2000 helpers for sRGB 0-255. The README requires telling the whole team before changing it.
 - Colors are RGB 0-255 tuples everywhere in contracts; OpenCV images are BGR, so `measure.py` flips at the boundary.
