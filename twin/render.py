@@ -31,6 +31,8 @@ STAGE = ROOT / "data" / "csi_digital_twin_v1" / "stations" / "fill_station" / "f
 CALIBRATION = ROOT / "twin" / "calibration.json"
 LUT = ROOT / "twin" / "material_lut.json"
 MANIFEST = ROOT / "synthetic" / "manifest.csv"
+SCENARIOS = ROOT / "synthetic" / "scenarios.csv"     # from twin/scenarios.py
+SCENARIO_OUT = ROOT / "synthetic" / "scenarios"
 TANK_STILL = ROOT / "synthetic" / "tank_still.jpg"   # a real tank_level frame, from fake_render.py
 OUT = ROOT / "synthetic"
 
@@ -199,16 +201,49 @@ def render(twin: Twin, limit: int | None) -> None:
     print(f"wrote {len(rows)} vials, {len(frames)} frames to synthetic/ (video_id {VIDEO_ID})")
 
 
+def render_scenarios(twin: Twin, limit: int | None) -> None:
+    """Render synthetic/scenarios.csv: one finished-vial image per row, labels echoed alongside."""
+    lut = json.loads(LUT.read_text())
+    with open(SCENARIOS) as fh:
+        rows = list(csv.DictReader(fh))[:limit]
+    images = SCENARIO_OUT / "images"
+    images.mkdir(parents=True, exist_ok=True)
+
+    t0 = time.time()
+    for i, r in enumerate(rows):
+        ml = sum(float(r[f"{t.lower()}_ml"]) for t in ("T100", "T200", "T400") if r[f"{t.lower()}_ml"])
+        twin.set_liquid(ml, diffuse_for(lut, [float(r[c]) for c in "rgb"]))
+        twin.set_lights(float(r["light"]))
+        # exposure is a camera gain applied after the render, separate from the scene lights
+        image = np.clip(twin.capture() * float(r["exposure"]), 0, 255).astype(np.uint8)
+        r["filename"] = f"{r['set']}_{int(r['vial']):04d}.png"
+        cv2.imwrite(str(images / r["filename"]), image[..., ::-1])
+        if i % 20 == 0 or i == len(rows) - 1:
+            print(f"{i + 1}/{len(rows)} images, {(time.time() - t0) / (i + 1):.1f} s/image", flush=True)
+
+    with open(SCENARIO_OUT / "labels.csv", "w", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=[*rows[0]])
+        writer.writeheader()
+        writer.writerows(rows)
+    print(f"wrote {len(rows)} images to {SCENARIO_OUT.relative_to(ROOT)}/")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--calibrate", action="store_true", help="fit twin/material_lut.json instead of rendering")
+    ap.add_argument("--scenarios", action="store_true", help="render synthetic/scenarios.csv instead")
     ap.add_argument("--limit", type=int, default=None, help="max vials")
     ap.add_argument("--subframes", type=int, default=32, help="path-tracing subframes (quality vs speed)")
     a = ap.parse_args()
 
     try:
         twin = Twin(a.subframes)
-        calibrate(twin, json.loads(CALIBRATION.read_text())) if a.calibrate else render(twin, a.limit)
+        if a.calibrate:
+            calibrate(twin, json.loads(CALIBRATION.read_text()))
+        elif a.scenarios:
+            render_scenarios(twin, a.limit)
+        else:
+            render(twin, a.limit)
     except BaseException:
         traceback.print_exc()
         kit.close(exit_code=1)               # Kit's fast shutdown would otherwise drop the failure status

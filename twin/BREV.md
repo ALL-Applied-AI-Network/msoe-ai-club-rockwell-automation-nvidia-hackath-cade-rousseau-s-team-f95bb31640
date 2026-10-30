@@ -30,6 +30,18 @@ export ACCEPT_EULA=Y
 nohup /isaac-sim/python.sh twin/render.py > synthetic/render.log 2>&1 &    # all 462 vials, about 80 min
 ```
 
+**Labeled sets for the optimization model.** Build `synthetic/scenarios.csv` locally with
+`uv run python twin/scenarios.py` and copy it over, then:
+
+```bash
+/isaac-sim/python.sh twin/render.py --scenarios --limit 8                   # quick look
+nohup /isaac-sim/python.sh twin/render.py --scenarios > synthetic/scen.log 2>&1 &   # 291 images, ~12 min
+```
+
+One finished-vial image per row, into `synthetic/scenarios/images/`, with every label echoed to
+`synthetic/scenarios/labels.csv` (injected fraction, residual model, decay scenario, lighting,
+exposure, seed). Bring both back with the step 5 command.
+
 - The first run takes about 4 extra minutes to compile shaders.
 - The `OmniHub` and `GLFW` warnings are harmless.
 - `twin/material_lut.json` (committed) maps liquid colors to the camera. Rerun `/isaac-sim/python.sh twin/render.py --calibrate` only if you change the twin's material or lights.

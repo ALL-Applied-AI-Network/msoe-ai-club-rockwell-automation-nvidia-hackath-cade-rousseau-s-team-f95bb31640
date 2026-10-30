@@ -22,6 +22,7 @@ uv run streamlit run dashboard/app.py     # older Streamlit dashboard and ROI ca
 uv run python twin/calibrate.py           # data/ video 5 -> twin/calibration.json (committed)
 uv run python twin/manifest.py            # every valid recipe x 3 vials -> synthetic/manifest.csv
 uv run python twin/fake_render.py         # quick 2D stand-in -> synthetic/ (video_id 100)
+uv run python twin/scenarios.py           # labeled robustness/decay/demo sets -> synthetic/scenarios.csv
 # Run twin/render.py inside Isaac Sim on Brev; see twin/BREV.md.
 
 graphify update .                         # refresh graphify-out/ code graph (no LLM cost)
