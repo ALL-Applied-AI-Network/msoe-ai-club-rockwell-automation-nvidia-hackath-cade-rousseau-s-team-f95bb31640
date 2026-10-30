@@ -2,3 +2,4 @@ date,gpu,hours,credits,purpose
 2026-10-20,1x L40S (Crusoe),~1.0,~1.74,set up Isaac Sim container; smoke test; material calibration; 12-vial test render (2.6 s/frame); incl. one failed create
 2026-10-24,1x L40S (AWS g6e.4xlarge launchable),~0.85,~3.10,deploy Isaac Launchable; fix /isaac-sim ownership; smoke test; calibration (matches 10/20 VM); deleted old Crusoe VM
 2026-10-25,1x L40S (AWS g6e.4xlarge launchable),~1.81,~6.60,fresh launchable; ownership fix; full render 462 vials / 1848 frames (EXIT=0)
+2026-10-30,1x L40S (AWS g6e.4xlarge launchable),~0.6,~2.20,scenario sets: 291 labeled images (robustness/decay/demo) for the optimization model
