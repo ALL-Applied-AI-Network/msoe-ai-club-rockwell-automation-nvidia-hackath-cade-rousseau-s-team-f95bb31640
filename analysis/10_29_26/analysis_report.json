@@ -1,0 +1,176 @@
+{
+  "status": "measured",
+  "created_at": "2026-10-30T23:39:59.766408+00:00",
+  "output_dir": "analysis/10_29_26",
+  "missing_inputs": [],
+  "errors": [],
+  "input_provenance": [
+    {
+      "path": "data/10_29_26/vial_filled/labels/vial_recipes.csv",
+      "bytes": 1608,
+      "sha256": "067449650548447572c4eb45147cf1078662de04238b700fa4cf65bf23fc5df7"
+    },
+    {
+      "path": "data/10_29_26/vial_filled/labels/vial_fill_frame_labels.csv",
+      "bytes": 122970,
+      "sha256": "0f8d355aba0e0c50b8bb5553c0b0af3b14d9e696f6f7b0fff5ff278a94735ea2"
+    },
+    {
+      "path": "data/10_29_26/vial_filled/videos/video_angled_view_2026-10-0006_20261030_020255.mp4",
+      "bytes": 33315816,
+      "modified_ns": 1793402372303282314
+    },
+    {
+      "path": "data/10_29_26/vial_filled/image_index.csv",
+      "bytes": 78370,
+      "sha256": "c56e8f5fe78f590d9c056cce3cc563730ad1a1b398e7b045ea44d4aee1fcede4"
+    },
+    {
+      "path": "analysis/10_29_26/camera_clock_audit.csv",
+      "bytes": 4229,
+      "sha256": "306e265bb2bb034e77787ef9d93f787bd8e19ec68a39dec6c3c4e83bea00ff00"
+    }
+  ],
+  "label_audits": [
+    {
+      "session_id": "10_29_26",
+      "timing": {
+        "schema": "wall_clock",
+        "video_origin": "2026-10-30T02:02:55.390000",
+        "origin_source": "frame_timestamp_minus_video_s"
+      },
+      "frame_labels": {
+        "status": "audited",
+        "frames": 1187,
+        "labeled_vials": 26,
+        "expected_images": 1187,
+        "available_images": 1187,
+        "missing_image_examples": [],
+        "warning": "Review clock domains and full-vial alignment in the contact sheets. Original video5 stills can be offset by one vial."
+      },
+      "video_container_duration_s": 1956.3,
+      "last_labeled_end_s": 2128.61,
+      "label_clock_exceeds_container": true,
+      "measurement_source": "timestamped_stills"
+    }
+  ],
+  "measurement_rows": 27,
+  "measured_vials": 26,
+  "label_inventory": {
+    "vials": 27,
+    "sessions": 1,
+    "recipe_runs": 7,
+    "transitions": 6,
+    "distinct_recipes": 3,
+    "directed_pairs": [
+      {
+        "previous_recipe_id": 1,
+        "next_recipe_id": 2,
+        "occurrences": 2,
+        "independent_sessions": 1
+      },
+      {
+        "previous_recipe_id": 2,
+        "next_recipe_id": 3,
+        "occurrences": 2,
+        "independent_sessions": 1
+      },
+      {
+        "previous_recipe_id": 3,
+        "next_recipe_id": 1,
+        "occurrences": 2,
+        "independent_sessions": 1
+      }
+    ],
+    "unobserved_directions": [
+      [
+        1,
+        3
+      ],
+      [
+        2,
+        1
+      ],
+      [
+        3,
+        2
+      ]
+    ],
+    "mixture_recipes": 0,
+    "unobservable_vials": [
+      "10_29_26/vial10"
+    ],
+    "operator_error_vials": [
+      "10_29_26/vial8",
+      "10_29_26/vial10"
+    ],
+    "note": "Counts describe labels. Multiple changes within one recording do not establish independent sessions or physical recovery."
+  },
+  "usable_vials": 16,
+  "source_clock_verified_vials": 25,
+  "measurement_quality_flags": {
+    "clipped_dark_channels": 8,
+    "label_status_not_ok": 2,
+    "uneven_liquid_patch": 1,
+    "stale_camera_frame": 1,
+    "unobservable_vial_window": 1
+  },
+  "camera_repeatability": {
+    "proven": false,
+    "camera_id": "vial_fill",
+    "calibration_id": "4b36c670a1f71a29f9f8",
+    "threshold": 2.2,
+    "budget_delta_e": 0.7333333333333334,
+    "reasons": [
+      "Camera calibration has no saved alignment/ROI review acknowledgment.",
+      "Lock camera settings or supply a per-frame reference patch.",
+      "Independent held-out color-chart validation is missing.",
+      "Independent stable-vial repeatability controls are missing."
+    ],
+    "controls": []
+  },
+  "transition_support": {
+    "transitions": 6,
+    "sessions": 1,
+    "directed_pairs": [
+      {
+        "previous_recipe_id": 1,
+        "next_recipe_id": 2,
+        "occurrences": 2,
+        "independent_sessions": 1
+      },
+      {
+        "previous_recipe_id": 2,
+        "next_recipe_id": 3,
+        "occurrences": 2,
+        "independent_sessions": 1
+      },
+      {
+        "previous_recipe_id": 3,
+        "next_recipe_id": 1,
+        "occurrences": 2,
+        "independent_sessions": 1
+      }
+    ],
+    "qualified_transitions": [],
+    "qualified_sessions": 0,
+    "shared_decay_supported": false,
+    "transition_specific_supported": false,
+    "repeated_supported_pairs": [],
+    "reason": "Need at least five transitions in three sessions, each with four usable vials and independent clean controls.",
+    "limitation": "Counts are minimum identifiability checks, not proof of statistical power. Frames and same-session transitions are correlated."
+  },
+  "clean_model_status": "insufficient_data",
+  "clean_model_reason": "Independent clean-vial controls are missing.",
+  "carryover_status": "insufficient_data",
+  "production_decisions_enabled": false,
+  "limitations": [
+    "Observed curve thresholds are exploratory until camera and clean-model validation pass.",
+    "Stable run tails are surrogate targets, never certified clean controls.",
+    "Censored transitions are reported separately from completed recoveries.",
+    "Requested mL are throughput proxies unless measured dispensed_ml is supplied.",
+    "Tank baseline colors are not assumed equal to vial-camera colors.",
+    "A single session cannot establish general carryover behavior."
+  ],
+  "source_data_commit": "00bc374"
+}

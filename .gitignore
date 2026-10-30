@@ -1,6 +1,7 @@
 data/csi-vial-fill-dataset
 synthetic/
 outputs/
+work/
 .venv/
 __pycache__/
 .pytest_cache/

@@ -77,9 +77,22 @@ review or adjust the four liquid regions, and save the CIELAB baselines for
 `outputs/baselines/` and can be downloaded as JSON. This flow works without the
 event dataset. T_300 is recorded but remains unavailable for recipes.
 
-See [MODEL_PROPOSAL.md](MODEL_PROPOSAL.md) for the proposed volume-aware optical
-mixing model and impurity index driven by the **previous recipe run**. Model
-calibration and prediction are proposed next steps; the baseline is implemented.
+See [MODEL_PROPOSAL.md](MODEL_PROPOSAL.md) for the volume-aware optical model
+design and the **previous recipe run** state. The notebook below implements clean
+optical-density fitting and observed recovery analysis; production deployment
+still requires camera evidence and validated model artifacts.
+
+### Vial color and transition modeling
+
+Open [`notebooks/transition_analysis.ipynb`](notebooks/transition_analysis.ipynb)
+or run `uv run --group analysis python scripts/analyze_transitions.py` after
+`uv sync --locked --group analysis`. The workflow accepts the October 29
+`vial_filled/labels/vial_recipes.csv` and `vial_fill_frame_labels.csv` schema,
+aligns wall-clock labels using `timestamp - video_s`, and exports measured
+recovery curves, censored transitions, independent-session counts and supported
+optical-density/decay fits. Camera proof and independent clean-model validation
+gate production pass/fail; missing data produces explicit pending/null results.
+See [configuration, calibration controls and validation](docs/transition_analysis.md).
 
 ### Who owns what
 

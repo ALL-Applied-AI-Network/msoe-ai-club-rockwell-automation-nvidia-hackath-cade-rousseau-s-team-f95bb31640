@@ -1,0 +1,99 @@
+[
+  {
+    "run_id": "10_29_26/run2",
+    "recipe_id": 2,
+    "source": "missing",
+    "source_runs": [],
+    "excluded_vial_keys": [],
+    "rgb": null,
+    "lab": null
+  },
+  {
+    "run_id": "10_29_26/run3",
+    "recipe_id": 3,
+    "source": "other_run_tail_surrogate",
+    "source_runs": [
+      "10_29_26/run6"
+    ],
+    "excluded_vial_keys": [],
+    "rgb": [
+      10.0,
+      25.5,
+      15.5
+    ],
+    "lab": [
+      7.38225429513346,
+      -8.332138827010088,
+      4.171057338485362
+    ]
+  },
+  {
+    "run_id": "10_29_26/run4",
+    "recipe_id": 1,
+    "source": "other_run_tail_surrogate",
+    "source_runs": [
+      "10_29_26/run1"
+    ],
+    "excluded_vial_keys": [],
+    "rgb": [
+      59.5,
+      44.5,
+      14.5
+    ],
+    "lab": [
+      19.29675116655401,
+      2.9343467101089757,
+      21.430064524102143
+    ]
+  },
+  {
+    "run_id": "10_29_26/run5",
+    "recipe_id": 2,
+    "source": "missing",
+    "source_runs": [],
+    "excluded_vial_keys": [],
+    "rgb": null,
+    "lab": null
+  },
+  {
+    "run_id": "10_29_26/run6",
+    "recipe_id": 3,
+    "source": "same_run_tail_surrogate",
+    "source_runs": [
+      "10_29_26/run6"
+    ],
+    "excluded_vial_keys": [
+      "10_29_26/vial21",
+      "10_29_26/vial22"
+    ],
+    "rgb": [
+      10.0,
+      25.5,
+      15.5
+    ],
+    "lab": [
+      7.38225429513346,
+      -8.332138827010088,
+      4.171057338485362
+    ]
+  },
+  {
+    "run_id": "10_29_26/run7",
+    "recipe_id": 1,
+    "source": "other_run_tail_surrogate",
+    "source_runs": [
+      "10_29_26/run1"
+    ],
+    "excluded_vial_keys": [],
+    "rgb": [
+      59.5,
+      44.5,
+      14.5
+    ],
+    "lab": [
+      19.29675116655401,
+      2.9343467101089757,
+      21.430064524102143
+    ]
+  }
+]

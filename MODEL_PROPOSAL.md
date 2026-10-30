@@ -12,7 +12,14 @@ Confirmed snapshots and their normalized source images are saved under ignored `
 
 API: `POST /api/baselines/analyze` accepts `image_base64`, `source_name` and optional `regions` (all four normalized `[left, top, right, bottom]` boxes). `POST /api/baselines` additionally requires `confirmed: true` and reviewed regions. `GET /api/baselines/<id>` and `/image` restore the saved values and image. T_300 is measured but flagged `recipe_enabled: false` to respect the station's existing out-of-service configuration. Existing contracts keep T100/T200/T400 names; translate underscores only at the future integration boundary.
 
-## Part 2: recommended model (proposal, not trained or connected yet)
+## Part 2: model design (analysis fitting implemented; deployment pending)
+
+The clean optical-density fit, shared decay fit and gated quality comparison are
+now implemented in [the analysis workflow](docs/transition_analysis.md) and
+[`notebooks/transition_analysis.ipynb`](notebooks/transition_analysis.ipynb).
+They require real vial-camera controls and independent transitions; no physical
+coefficients are fabricated when those inputs are missing. The more detailed
+loading/adsorption state below remains a design for future identified data.
 
 Use a **calibrated optical-density mixing model with a recipe-level state-space carryover model**. It is interpretable and can be fitted with less data than a neural network. A small regularized regression correction can capture remaining nonlinearities. Start with this baseline before deciding whether a larger learned model is warranted.
 
@@ -68,4 +75,8 @@ The index is not a measured contaminant percentage or chemical purity. The full 
 - Split by entire runs and collection sessions (and hold out recipe transitions), never random adjacent vials. Report median/95th-percentile CIEDE2000, error by transition direction, false-negative rate at the team's color tolerance, and uncertainty coverage. Never infer chemical residue accuracy from color accuracy alone.
 - Validate zero-residue recovery, same-recipe continuity, zero flush vs increasing flush, increasing loading saturation, dilution with current volume, numerical stability near black, and inactive-tank rejection. If data cannot separate holdup and adsorption, report that identifiability limit and keep the simpler model.
 
-No learned coefficients, recipe predictions or impurity scores are fabricated in the current implementation. The initialization API is available now; this proposal defines the next model implementation and calibration work.
+No pretrained physical coefficients or impurity scores are committed. The
+initialization API is available, and the notebook can fit clean and recovery
+models when the required evidence is supplied. Missing evidence produces
+explicit pending/null results. Promotion into the operator API requires
+validated deployment artifacts and calibrated volume measurement.

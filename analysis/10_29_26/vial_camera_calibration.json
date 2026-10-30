@@ -1,0 +1,37 @@
+{
+  "camera_id": "vial_fill",
+  "matrix": [
+    [
+      1.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      1.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "reference_size": [
+    640,
+    480
+  ],
+  "liquid_roi": [
+    300,
+    335,
+    324,
+    370
+  ],
+  "reference_roi": null,
+  "reference_rgb": null,
+  "settings_locked": false,
+  "alignment_reviewed": false,
+  "validation_delta_e": [],
+  "chart_sha256": null,
+  "calibration_id": "4b36c670a1f71a29f9f8"
+}
