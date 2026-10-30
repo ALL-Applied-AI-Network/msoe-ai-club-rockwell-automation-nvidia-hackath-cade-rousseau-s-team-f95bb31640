@@ -5,6 +5,7 @@ outputs/
 __pycache__/
 *.mp4
 *.jpg
+*.zip
 .pytest_cache/
 .ruff_cache/
 .serena
