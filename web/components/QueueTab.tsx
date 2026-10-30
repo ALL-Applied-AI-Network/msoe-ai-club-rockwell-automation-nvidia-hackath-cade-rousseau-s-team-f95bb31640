@@ -82,6 +82,7 @@ export default function QueueTab() {
                   <th className="py-1 font-normal">Changeover</th>
                   <th className="font-normal">Predicted first vial</th>
                   <th className="font-normal">ΔE</th>
+                  <th className="font-normal">Cost</th>
                 </tr>
               </thead>
               <tbody>
@@ -90,6 +91,7 @@ export default function QueueTab() {
                     <td className="py-1.5">{t.prev_recipe_id} → {t.recipe_id}</td>
                     <td><Swatch rgb={t.first_vial_rgb} size="sm" /></td>
                     <td>{t.delta_e !== null ? t.delta_e.toFixed(1) : "—"}{t.warn && " ⚠"}</td>
+                    <td>{t.cost !== null ? t.cost.toFixed(1) : "—"}</td>
                   </tr>
                 ))}
               </tbody>
@@ -97,6 +99,28 @@ export default function QueueTab() {
             <p className="text-sm">
               Suggested order: {plan.schedule.suggested ? plan.schedule.suggested.join(" → ") : <span className="text-muted">scheduler not connected yet</span>}
             </p>
+            {plan.schedule.submitted_cost !== null && plan.schedule.suggested_cost !== null && (
+              <div className="rounded border border-line bg-slate-50 p-3 text-sm">
+                <p>Starting recipe fixed: Recipe {plan.schedule.fixed_start_recipe_id}</p>
+                {plan.schedule.submitted_transition_sum !== null && plan.schedule.suggested_transition_sum !== null && (
+                  <p>
+                    Total transition risk: {plan.schedule.submitted_transition_sum.toFixed(1)} → {plan.schedule.suggested_transition_sum.toFixed(1)}
+                    {" "}({((plan.schedule.transition_sum_reduction ?? 0) * 100).toFixed(1)}% lower)
+                  </p>
+                )}
+                <p>
+                  Risk-aware objective: {plan.schedule.submitted_cost.toFixed(1)} → {plan.schedule.suggested_cost.toFixed(1)}
+                  {" "}({((plan.schedule.relative_reduction ?? 0) * 100).toFixed(1)}% lower)
+                </p>
+                {plan.schedule.submitted_worst_transition !== null && plan.schedule.suggested_worst_transition !== null && (
+                  <p>
+                    Worst-transition reduction: {((plan.schedule.worst_transition_reduction ?? 0) * 100).toFixed(1)}%
+                    {" "}({plan.schedule.submitted_worst_transition.toFixed(1)} → {plan.schedule.suggested_worst_transition.toFixed(1)})
+                  </p>
+                )}
+              </div>
+            )}
+            {plan.schedule.warnings.map((warning) => <Note key={warning}>{warning}</Note>)}
           </div>
         )}
       </Card>

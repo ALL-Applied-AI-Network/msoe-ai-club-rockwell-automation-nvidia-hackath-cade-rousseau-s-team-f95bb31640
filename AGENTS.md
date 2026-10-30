@@ -36,6 +36,9 @@ The pipeline is a chain of modules in `src/changeover_guard/` whose only couplin
 - `measure.tanks()` reads fixed per-tank ROIs (`_TANK_ROIS`, defined for 640x480 and scaled for other sizes) using a median over non-shadow, non-glare pixels. `measure.vial()`, `mixing.predict()`, `advise.check()` and `advise.advise()` are still `NotImplementedError` stubs; their signatures are the contract.
 - `dashboard/app.py` imports the private `_TANK_ROIS` / `_REFERENCE_SIZE` from `measure` to draw ROI overlays, so renaming them breaks the dashboard.
 - `tools/generate_tank_variations.py` and `tools/organize_ai_tank_variations.py` build tank-color test images into `generated/` (consumed by the dashboard). The ROIs hard-coded in `generate_tank_variations.py` currently differ from `measure._TANK_ROIS` despite its comment saying they match.
+- Production sequencing is independent of the `mixing.py` stub: `appearance.py` loads the empirical twin calibration, `carryover.py` implements forward/inverse residual hypotheses, `costs.py` builds directed relative transition scores, and `optimizer.py` provides greedy and exact fixed-start sequencing. Duplicate recipe IDs are distinct batch nodes. `features.py` owns the calibrated vial ROI used by the optimization evaluation.
+- `scripts/evaluate_optimization.py` reports synthetic software/render recovery and the Run 5 scheduling comparison. Its scores are model-relative under explicit residual assumptions, not measured waste or physical carryover truth.
+- `sensitivity.py` evaluates 36 default holdup/decay/residual-source scenarios. The exact optimizer can include a worst-transition penalty; the API uses weight 0.5 and returns both total and worst-transition metrics. Sensitivity results are hypothetical scenario analysis, while Run 5 first-vial ranking is exploratory because each directed transition occurs once.
 
 ### Real data vs. synthetic twin
 

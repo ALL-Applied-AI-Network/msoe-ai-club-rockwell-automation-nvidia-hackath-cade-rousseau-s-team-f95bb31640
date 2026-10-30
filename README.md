@@ -67,6 +67,20 @@ uv run uvicorn api.main:app --reload     # API on :8000 (docs at /docs)
 cd web && bun install && bun dev         # operator UI on :3000, in a second terminal
 ```
 
+### Optimization model
+
+The queue optimizer preserves the first submitted batch, supports repeated recipe IDs as distinct
+batches, and uses an exact Held-Karp solver over directed empirical carryover costs. Its objective
+balances total changeover risk with the worst individual transition. Run synthetic recovery, real
+Run 5 exploratory ranking and the 36-scenario sensitivity analysis with:
+
+```bash
+uv run python scripts/evaluate_optimization.py
+```
+
+The reported reduction is a relative model score under explicit carryover assumptions, not measured
+scrap or waste. See `docs/optimization_model.md` for the model, API, validation results and limitations.
+
 For a demo, `cd web && bun run build` once; then `uv run uvicorn api.main:app` alone serves the UI and API at http://localhost:8000. See `web/README.md`. The Streamlit tools in `dashboard/` still run with `uv run streamlit run dashboard/app.py`.
 
 ### Who owns what
