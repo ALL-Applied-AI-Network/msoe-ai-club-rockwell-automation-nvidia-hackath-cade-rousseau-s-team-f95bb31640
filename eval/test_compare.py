@@ -149,7 +149,7 @@ def test_fresh_and_cached_measurements_are_identical(
     monkeypatch.setattr(
         compare_module,
         "_cache_metadata",
-        lambda _root: {"fingerprint": fingerprint["value"]},
+        lambda _root, _cached_inputs=None: {"fingerprint": fingerprint["value"]},
     )
     monkeypatch.setattr(compare_module, "measure_video", fake_measure_video)
     cache_path = tmp_path / "vial_measurements.csv"
@@ -172,6 +172,31 @@ def test_fresh_and_cached_measurements_are_identical(
     edited.to_csv(cache_path, index=False)
     load_or_measure(tmp_path, cache_path, refresh=False)
     assert measure_calls["count"] == 3
+
+
+def test_committed_cache_is_reused_without_data_across_line_endings(
+    tmp_path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Any checkout of the committed cache must score without the real video."""
+
+    video = tmp_path / "video.mp4"
+    video.write_bytes(b"frames")
+    monkeypatch.setattr(compare_module, "_source_files", lambda _root: {"video": video})
+    monkeypatch.setattr(
+        compare_module, "measure_video", lambda _root: _complete_measurements()
+    )
+    cache_path = tmp_path / "results" / "vial_measurements.csv"
+    load_or_measure(tmp_path, cache_path, refresh=True)
+
+    # Simulate a teammate's checkout: other line endings and no data/.
+    video.unlink()
+    lf = cache_path.read_bytes().replace(b"\r\n", b"\n")
+    cache_path.write_bytes(lf.replace(b"\n", b"\r\n"))
+    monkeypatch.setattr(
+        compare_module, "measure_video", lambda _root: pytest.fail("re-measured")
+    )
+    reused = load_or_measure(tmp_path, cache_path, refresh=False)
+    assert len(reused) == 30
 
 
 def test_svg_labels_unavailable_metrics_as_not_available(tmp_path) -> None:

@@ -77,10 +77,10 @@ The following carryover-risk proxies passed the legacy rule at the primary thres
 
 | Metric | Status | What is missing |
 |---|---|---|
-| Leave-one-recipe-out generalization | Pending | No vial/carryover `synthetic/` training set exists. |
-| First-vial prediction ΔE00 | Pending | `mixing.predict()` is still a stub. |
+| Leave-one-recipe-out generalization | Pending | Twin scenario sets exist (`twin/scenarios.py`), but no model trained on them is scored on real vials here. |
+| First-vial prediction ΔE00 | Pending | `mixing.predict()` is still a stub; `carryover.py` forward predictions are not yet scored against real first vials. |
 | Explanation correctness | Pending | `advise()` is still a stub and there are no independent cause labels. |
-| Ordering-advice comparison | Pending | Scheduling advice is not implemented or labeled. |
+| Ordering-advice comparison | Separate | The queue optimizer is evaluated as a relative model score by `scripts/evaluate_optimization.py`; no measured-outcome labels exist to compare orderings. |
 
 ## Interpretation limits
 

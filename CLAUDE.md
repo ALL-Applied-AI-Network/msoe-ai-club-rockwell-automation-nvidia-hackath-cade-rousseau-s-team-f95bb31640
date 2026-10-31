@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 uv sync                                   # install deps (incl. dev: pytest, ruff)
-uv run pytest                             # all tests (testpaths = tests/)
+uv run pytest                             # all tests (testpaths = tests/, eval/)
 uv run pytest tests/test_measure.py::test_name   # single test
 uv run ruff check .                       # lint (no ruff config; defaults)
 uv run uvicorn api.main:app --reload     # FastAPI backend on :8000; also serves web/out once built

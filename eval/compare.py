@@ -31,7 +31,9 @@ DEFAULT_DATA = REPO_ROOT / "data"
 DEFAULT_OUTPUT = Path(__file__).resolve().parent / "results"
 VIDEO_ID = 5
 REFERENCE_POSITION = 3
-CACHE_SCHEMA_VERSION = 1
+# Bump when measure_video() or the cache rounding below changes; this file is
+# not hashed so report-text edits do not force a video re-decode.
+CACHE_SCHEMA_VERSION = 2
 
 # The shared project threshold is the primary result. The smaller values show
 # whether the old/new ranking survives stricter fixed reporting points instead
@@ -63,7 +65,6 @@ MEASUREMENT_COLUMNS = [
 # Hashing the code avoids silently comparing old measurements after an ROI or
 # cycle-segmentation edit elsewhere in the repository.
 MEASUREMENT_CODE_FILES = (
-    Path(__file__).resolve(),
     REPO_ROOT / "src" / "color_monitor" / "config.py",
     REPO_ROOT / "src" / "color_monitor" / "color.py",
     REPO_ROOT / "src" / "color_monitor" / "extract.py",
@@ -81,12 +82,9 @@ def _configure_monitor(data_root: Path) -> None:
     """
 
     vial_fill = data_root / "vial_fill"
-    required = [
-        vial_fill / "videos" / f"vial_fill_video_{VIDEO_ID}.mp4",
-        vial_fill / "labels" / "video5_vial_recipes.csv",
-        vial_fill / "labels" / "video5_frame_labels.csv",
+    missing = [
+        str(path) for path in _source_files(data_root).values() if not path.is_file()
     ]
-    missing = [str(path) for path in required if not path.is_file()]
     if missing:
         formatted = "\n  - ".join(missing)
         raise FileNotFoundError(
@@ -101,9 +99,15 @@ def _configure_monitor(data_root: Path) -> None:
     monitor_config.FRAME_LABELS = vial_fill / "labels" / "video5_frame_labels.csv"
 
 
-def _sha256(path: Path) -> str:
-    """Hash a source file in bounded chunks for cache provenance."""
+def _sha256(path: Path, text: bool = False) -> str:
+    """Hash a file in bounded chunks for cache provenance.
 
+    Text files are hashed with LF line endings so a Windows (autocrlf) and a
+    Linux checkout of the same commit agree.
+    """
+
+    if text:
+        return hashlib.sha256(path.read_bytes().replace(b"\r\n", b"\n")).hexdigest()
     digest = hashlib.sha256()
     with path.open("rb") as stream:
         for chunk in iter(lambda: stream.read(1024 * 1024), b""):
@@ -111,10 +115,10 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def _cache_metadata(data_root: Path) -> dict[str, object]:
-    """Describe every input and setting that can affect vial measurements."""
+def _source_files(data_root: Path) -> dict[str, Path]:
+    """Return the real-data files whose content defines the measurements."""
 
-    source_files = {
+    return {
         "vial_fill_video_5.mp4": data_root
         / "vial_fill"
         / "videos"
@@ -128,15 +132,31 @@ def _cache_metadata(data_root: Path) -> dict[str, object]:
         / "labels"
         / "video5_frame_labels.csv",
     }
+
+
+def _cache_metadata(
+    data_root: Path, cached_inputs: dict[str, object] | None = None
+) -> dict[str, object]:
+    """Describe every input and setting that can affect vial measurements.
+
+    Without the real data, the source hashes recorded with the committed cache
+    are trusted so the evaluation can be re-scored from the cache alone.
+    """
+
+    source_files = _source_files(data_root)
+    if all(path.is_file() for path in source_files.values()):
+        inputs: dict[str, object] = {
+            name: {"bytes": path.stat().st_size, "sha256": _sha256(path)}
+            for name, path in source_files.items()
+        }
+    else:
+        inputs = cached_inputs or {}
     payload: dict[str, object] = {
         "cache_schema_version": CACHE_SCHEMA_VERSION,
         "video_id": VIDEO_ID,
-        "inputs": {
-            name: {"bytes": path.stat().st_size, "sha256": _sha256(path)}
-            for name, path in source_files.items()
-        },
+        "inputs": inputs,
         "measurement_code": {
-            str(path.relative_to(REPO_ROOT)).replace("\\", "/"): _sha256(path)
+            str(path.relative_to(REPO_ROOT)).replace("\\", "/"): _sha256(path, text=True)
             for path in MEASUREMENT_CODE_FILES
         },
         "dependencies": {
@@ -222,8 +242,6 @@ def load_or_measure(data_root: Path, cache_path: Path, refresh: bool) -> pd.Data
     """Reuse measurements only when source data, code, and settings still match."""
 
     data_root = data_root.resolve()
-    _configure_monitor(data_root)
-    current_metadata = _cache_metadata(data_root)
     metadata_path = cache_path.with_suffix(".meta.json")
     cached_metadata: dict[str, object] | None = None
     if metadata_path.is_file():
@@ -231,14 +249,22 @@ def load_or_measure(data_root: Path, cache_path: Path, refresh: bool) -> pd.Data
             cached_metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError):
             cached_metadata = None
+    current_metadata = _cache_metadata(
+        data_root, (cached_metadata or {}).get("inputs")
+    )
 
     cache_matches = (
         cache_path.is_file()
         and cached_metadata is not None
         and cached_metadata.get("fingerprint") == current_metadata["fingerprint"]
-        and cached_metadata.get("cache_sha256") == _sha256(cache_path)
+        and cached_metadata.get("cache_sha256") == _sha256(cache_path, text=True)
     )
     if cache_matches and not refresh:
+        if not all(path.is_file() for path in _source_files(data_root).values()):
+            print(
+                f"Video 5 source files not found under {data_root}; "
+                "reusing committed measurements as recorded."
+            )
         vials = pd.read_csv(cache_path)
     else:
         if cache_path.is_file() and not refresh:
@@ -253,7 +279,7 @@ def load_or_measure(data_root: Path, cache_path: Path, refresh: bool) -> pd.Data
         vials.to_csv(cache_path, index=False, float_format="%.6f")
         persisted_metadata = {
             **current_metadata,
-            "cache_sha256": _sha256(cache_path),
+            "cache_sha256": _sha256(cache_path, text=True),
         }
         metadata_path.write_text(
             json.dumps(persisted_metadata, indent=2, sort_keys=True) + "\n",
@@ -755,10 +781,10 @@ def write_report(
             "",
             "| Metric | Status | What is missing |",
             "|---|---|---|",
-            "| Leave-one-recipe-out generalization | Pending | No vial/carryover `synthetic/` training set exists. |",
-            "| First-vial prediction ΔE00 | Pending | `mixing.predict()` is still a stub. |",
+            "| Leave-one-recipe-out generalization | Pending | Twin scenario sets exist (`twin/scenarios.py`), but no model trained on them is scored on real vials here. |",
+            "| First-vial prediction ΔE00 | Pending | `mixing.predict()` is still a stub; `carryover.py` forward predictions are not yet scored against real first vials. |",
             "| Explanation correctness | Pending | `advise()` is still a stub and there are no independent cause labels. |",
-            "| Ordering-advice comparison | Pending | Scheduling advice is not implemented or labeled. |",
+            "| Ordering-advice comparison | Separate | The queue optimizer is evaluated as a relative model score by `scripts/evaluate_optimization.py`; no measured-outcome labels exist to compare orderings. |",
             "",
             "## Interpretation limits",
             "",

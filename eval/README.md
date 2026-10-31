@@ -59,6 +59,8 @@ The first command decodes the real video and takes roughly 15–30 seconds.
 Later runs may omit `--refresh` to reuse the derived 30-row measurement cache.
 The cache is reused only when its source-data hashes, measurement-code hashes,
 and ROI/segmentation settings still match; otherwise it refreshes automatically.
+Without `data/`, a valid committed cache is reused as recorded, so the report
+can be re-scored (for example with `--threshold`) without the video.
 
 Options:
 
@@ -91,11 +93,14 @@ The original evaluation plan also calls for leave-one-recipe-out performance,
 first-vial prediction ΔE, explanation correctness, and an ordering-advice
 comparison. Those results are deliberately marked pending because:
 
-- `synthetic/` has no vial/carryover training data;
+- the labeled twin scenario sets (`twin/scenarios.py`) exist, but no model
+  trained on them is scored on real vials here;
 - `measure.vial()`, `mixing.predict()`, and the advice functions are still
-  unimplemented;
+  unimplemented, and `carryover.py` forward predictions are not yet scored
+  against real first vials;
 - the real dataset has no independent defect, cause, explanation, or scheduling
-  labels.
+  labels. The queue optimizer is evaluated separately as a relative model score
+  (`scripts/evaluate_optimization.py`, `docs/optimization_model.md`).
 
 The project rule remains: train the final model on the digital twin and evaluate
 it on real `data/`. The last-vial comparison here is an offline decision-logic
