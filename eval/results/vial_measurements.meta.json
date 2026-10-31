@@ -1,0 +1,57 @@
+{
+  "cache_schema_version": 2,
+  "cache_sha256": "ea8dfe7d43f48f76cff81019e597db142be0dd74da7bca292e65dba450695035",
+  "dependencies": {
+    "numpy": "2.4.6",
+    "opencv-python-headless": "5.0.0.93",
+    "pandas": "3.0.6",
+    "scikit-image": "0.26.0"
+  },
+  "fingerprint": "d34c95950744c1510eb2412a1637fbb1c4740085cbf24d4535e658de665f7223",
+  "inputs": {
+    "vial_fill_video_5.mp4": {
+      "bytes": 32178488,
+      "sha256": "6f87cec1aeec3b2bae6dac639a317c077a3f175f27abd5fc8430d6953d9d05b9"
+    },
+    "video5_frame_labels.csv": {
+      "bytes": 98682,
+      "sha256": "1c72a2f4f603b154ce24e0f73bd735ba4fe3fea74ee8f1566dccf7d911119cd3"
+    },
+    "video5_vial_recipes.csv": {
+      "bytes": 3286,
+      "sha256": "4baf9246f8b34b803f8e3de4ef9915375311be83f5de91edf8cb249a78254f6d"
+    }
+  },
+  "measurement_code": {
+    "src/color_monitor/audit.py": "0387ef98281a4d85c856ab458cd68c08c00f778a1e3eebd1e5b4f88d6b898f05",
+    "src/color_monitor/color.py": "9d9335573497a93e26baa38770198a93fb097d5ebb155002bbdd1b637582bad4",
+    "src/color_monitor/config.py": "43cb8d418d447005ee2bd772e8823cc78db7f5dd310f413431b23ae3d40b75e5",
+    "src/color_monitor/extract.py": "f22d0d04c929d20534d006d21cd517878adb707243397c263c9644efa4e623e7",
+    "src/color_monitor/segment.py": "72aacb419a850a158e1f8ab2894d66ea02988d2ca21456a95d1d0cf4d2934cb1"
+  },
+  "settings": {
+    "empty_min_frames": 5,
+    "empty_min_l": 33.0,
+    "holder_dark_l": 25.0,
+    "holder_min_dark_frac": 0.6,
+    "holder_roi": [
+      265,
+      210,
+      110,
+      45
+    ],
+    "liquid_roi": [
+      295,
+      375,
+      32,
+      22
+    ],
+    "max_l": 97.0,
+    "min_l": 3.0,
+    "min_valid_pixels": 100,
+    "sample_stride_s": 1.0,
+    "stable_max_step_de": 1.5,
+    "stable_min_frames": 5
+  },
+  "video_id": 5
+}

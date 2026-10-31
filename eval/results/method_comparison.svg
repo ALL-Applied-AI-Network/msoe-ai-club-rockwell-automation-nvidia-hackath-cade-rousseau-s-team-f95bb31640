@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="430" viewBox="0 0 920 430" role="img">
+<title>Known-color versus recipe-aware inspection metrics</title>
+<desc>Three paired horizontal bar charts at the selected color threshold.</desc>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="30" y="38" font-family="Arial, sans-serif" font-size="23" font-weight="700" fill="#111827">Decision-rule comparison at ΔE00 10</text>
+<text x="30" y="78" font-family="Arial, sans-serif" font-size="16" font-weight="700" fill="#111827">Carryover-proxy recall (higher is better)</text>
+<text x="30" y="119" font-family="Arial, sans-serif" font-size="14" fill="#374151">Legacy: any known color</text>
+<rect x="300" y="103" width="520" height="22" rx="3" fill="#e5e7eb"/>
+<rect x="300" y="103" width="0.0" height="22" rx="3" fill="#6b7280"/>
+<text x="832" y="119" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#111827">0%</text>
+<text x="30" y="149" font-family="Arial, sans-serif" font-size="14" fill="#374151">Recipe-aware: intended recipe</text>
+<rect x="300" y="133" width="520" height="22" rx="3" fill="#e5e7eb"/>
+<rect x="300" y="133" width="260.0" height="22" rx="3" fill="#15803d"/>
+<text x="832" y="149" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#111827">50%</text>
+<text x="30" y="185" font-family="Arial, sans-serif" font-size="16" font-weight="700" fill="#111827">False-alarm rate (lower is better)</text>
+<text x="30" y="226" font-family="Arial, sans-serif" font-size="14" fill="#374151">Legacy: any known color</text>
+<rect x="300" y="210" width="520" height="22" rx="3" fill="#e5e7eb"/>
+<rect x="300" y="210" width="0.0" height="22" rx="3" fill="#6b7280"/>
+<text x="832" y="226" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#111827">0%</text>
+<text x="30" y="256" font-family="Arial, sans-serif" font-size="14" fill="#374151">Recipe-aware: intended recipe</text>
+<rect x="300" y="240" width="520" height="22" rx="3" fill="#e5e7eb"/>
+<rect x="300" y="240" width="0.0" height="22" rx="3" fill="#15803d"/>
+<text x="832" y="256" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#111827">0%</text>
+<text x="30" y="292" font-family="Arial, sans-serif" font-size="16" font-weight="700" fill="#111827">Balanced accuracy (higher is better)</text>
+<text x="30" y="333" font-family="Arial, sans-serif" font-size="14" fill="#374151">Legacy: any known color</text>
+<rect x="300" y="317" width="520" height="22" rx="3" fill="#e5e7eb"/>
+<rect x="300" y="317" width="260.0" height="22" rx="3" fill="#6b7280"/>
+<text x="832" y="333" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#111827">50%</text>
+<text x="30" y="363" font-family="Arial, sans-serif" font-size="14" fill="#374151">Recipe-aware: intended recipe</text>
+<rect x="300" y="347" width="520" height="22" rx="3" fill="#e5e7eb"/>
+<rect x="300" y="347" width="390.0" height="22" rx="3" fill="#15803d"/>
+<text x="832" y="363" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#111827">75%</text>
+</svg>

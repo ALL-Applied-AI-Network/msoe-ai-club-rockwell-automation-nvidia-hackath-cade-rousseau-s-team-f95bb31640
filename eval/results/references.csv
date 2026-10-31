@@ -1,0 +1,11 @@
+vial_id,recipe_id,position_in_run,L,a,b,spread_de,status,usable_reference,reference_note
+3,5,3,8.556699,-3.366656,3.269965,0.221900,ok,True,used as clean-color reference
+6,6,3,,,,,color measurement uncertain,False,not used: stable color measurement unavailable
+9,7,3,14.823632,-5.826085,-13.395002,2.569346,ok,True,used as clean-color reference
+12,8,3,6.602399,-5.440934,2.045130,0.859775,ok,True,used as clean-color reference
+15,9,3,5.710532,-3.806337,0.531633,1.705176,ok,True,used as clean-color reference
+18,10,3,12.071457,-4.098662,7.654721,1.090568,ok,True,used as clean-color reference
+21,11,3,8.159672,-5.306197,-1.671198,0.939410,ok,True,used as clean-color reference
+24,12,3,11.210227,9.159876,10.408504,1.064776,ok,True,used as clean-color reference
+27,13,3,7.331980,-0.552660,3.557700,1.548396,ok,True,used as clean-color reference
+30,14,3,23.511036,-13.056269,3.371145,0.596790,ok,True,used as clean-color reference
