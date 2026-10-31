@@ -67,7 +67,51 @@ uv run uvicorn api.main:app --reload     # API on :8000 (docs at /docs)
 cd web && bun install && bun dev         # operator UI on :3000, in a second terminal
 ```
 
+### Optimization model
+
+The queue optimizer preserves the first submitted batch, supports repeated recipe IDs as distinct
+batches, and uses an exact Held-Karp solver over directed empirical carryover costs. Its objective
+balances total changeover risk with the worst individual transition. Run synthetic recovery, real
+Run 5 exploratory ranking and the 36-scenario sensitivity analysis with:
+
+```bash
+uv run python scripts/evaluate_optimization.py
+```
+
+The reported reduction is a relative model score under explicit carryover assumptions, not measured
+scrap or waste. See `docs/optimization_model.md` for the model, API, validation results and limitations.
+
 For a demo, `cd web && bun run build` once; then `uv run uvicorn api.main:app` alone serves the UI and API at http://localhost:8000. See `web/README.md`. The Streamlit tools in `dashboard/` still run with `uv run streamlit run dashboard/app.py`.
+
+### Tank color initialization
+
+The operator UI opens on **Tank Initialization**. Select a PNG/JPEG tank top view,
+review or adjust the four liquid regions, and save the CIELAB baselines for
+`T100`, `T200`, `T300`, and `T400`. Confirmed snapshots persist in ignored
+`outputs/baselines/` and can be downloaded as JSON. This flow works without the
+event dataset. T300 is recorded but remains unavailable for recipes.
+
+See [MODEL_PROPOSAL.md](MODEL_PROPOSAL.md) for the volume-aware optical model
+design and the **previous recipe run** state. The notebook below implements clean
+optical-density fitting and observed recovery analysis; production deployment
+still requires camera evidence and validated model artifacts.
+
+### Vial color and transition modeling
+
+Open [`notebooks/transition_analysis.ipynb`](notebooks/transition_analysis.ipynb)
+or run `uv run --group analysis python scripts/analyze_transitions.py` after
+`uv sync --locked --group analysis`. The workflow accepts the October 29
+`vial_filled/labels/vial_recipes.csv` and `vial_fill_frame_labels.csv` schema,
+aligns wall-clock labels using `timestamp - video_s`, and exports measured
+recovery curves, censored transitions, independent-session counts and supported
+optical-density/decay fits. Camera proof and independent clean-model validation
+gate production pass/fail; missing data produces explicit pending/null results.
+See [configuration, calibration controls and validation](docs/transition_analysis.md).
+
+The October 29 stills and labels are committed under `data/10_29_26/`; the three
+session videos are in the `data-10-29-26` GitHub release. From the repo root,
+`gh release download data-10-29-26 && unzip 10_29_26_videos.zip` restores
+`data/10_29_26/*/videos/*.mp4`.
 
 ### Who owns what
 

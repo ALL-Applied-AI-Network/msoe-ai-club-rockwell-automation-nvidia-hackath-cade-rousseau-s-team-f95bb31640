@@ -1,0 +1,58 @@
+{
+  "output_dir": "outputs/transition_analysis",
+  "threshold": 2.2,
+  "consecutive": 3,
+  "calibration": {
+    "camera_id": "vial_fill",
+    "matrix": [
+      [
+        1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "reference_size": [
+      640,
+      480
+    ],
+    "liquid_roi": [
+      300,
+      335,
+      324,
+      370
+    ],
+    "reference_roi": null,
+    "reference_rgb": null,
+    "settings_locked": false,
+    "alignment_reviewed": false,
+    "validation_delta_e": [],
+    "chart_sha256": null
+  },
+  "calibration_file": null,
+  "chart_csv": null,
+  "repeatability_csv": null,
+  "clean_controls_csv": null,
+  "baseline_id": null,
+  "sessions": [
+    {
+      "session_id": "10_29_26",
+      "recipe_csv": "data/10_29_26/vial_filled/labels/vial_recipes.csv",
+      "frame_csv": "data/10_29_26/vial_filled/labels/vial_fill_frame_labels.csv",
+      "video": "data/10_29_26/vial_filled/videos/video_angled_view_2026-10-0006_20261030_020255.mp4",
+      "video_start": null,
+      "source_mode": "auto",
+      "video_clock_verified": false,
+      "clock_audit_csv": "analysis/10_29_26/camera_clock_audit.csv"
+    }
+  ]
+}
