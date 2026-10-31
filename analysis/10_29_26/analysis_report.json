@@ -17,8 +17,7 @@
     },
     {
       "path": "data/10_29_26/vial_filled/videos/video_angled_view_2026-10-0006_20261030_020255.mp4",
-      "bytes": 33315816,
-      "modified_ns": 1793402372303282314
+      "bytes": 33315816
     },
     {
       "path": "data/10_29_26/vial_filled/image_index.csv",
@@ -28,7 +27,7 @@
     {
       "path": "analysis/10_29_26/camera_clock_audit.csv",
       "bytes": 4229,
-      "sha256": "306e265bb2bb034e77787ef9d93f787bd8e19ec68a39dec6c3c4e83bea00ff00"
+      "sha256": "a4821fac1111894c89408c2647d2e79da19ae3ffc1efebcf20cc46e08c8b31e2"
     }
   ],
   "label_audits": [

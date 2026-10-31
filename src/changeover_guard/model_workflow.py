@@ -74,7 +74,7 @@ def _find_file(directory: Path, candidates: list[str]) -> Path:
 
 
 def default_config(root: str | Path = ".") -> dict:
-    root = Path(root)
+    root = Path(root).resolve()
     directories = [
         root / "data" / "10_29_26" / "vial_filled" / "labels",
         root / "data" / "vial_filled" / "labels",
@@ -125,15 +125,13 @@ def default_config(root: str | Path = ".") -> dict:
         "sessions": [
             {
                 "session_id": "10_29_26" if "10_29_26" in labels.parts else "video5",
-                "recipe_csv": str(recipes.resolve()),
-                "frame_csv": str(frames.resolve()),
-                "video": str(video.resolve()),
+                "recipe_csv": _relative(recipes, root),
+                "frame_csv": _relative(frames, root),
+                "video": _relative(video, root),
                 "video_start": None,
                 "source_mode": "auto",
                 "video_clock_verified": False,
-                "clock_audit_csv": str(
-                    (root / "analysis/10_29_26/camera_clock_audit.csv").resolve()
-                )
+                "clock_audit_csv": "analysis/10_29_26/camera_clock_audit.csv"
                 if (root / "analysis/10_29_26/camera_clock_audit.csv").is_file()
                 else None,
             }
@@ -533,6 +531,16 @@ def run_workflow(config: dict, base_dir: str | Path = ".", plots=True) -> dict:
             ],
         ),
     ]:
+        # In-memory paths stay absolute for make_contact_sheets.
+        table = table.assign(
+            **{
+                column: table[column].map(
+                    lambda p: _relative(Path(p), base) if isinstance(p, str) else p
+                )
+                for column in ("contact_frame", "source_image")
+                if column in table
+            }
+        )
         (table if not table.empty else pd.DataFrame(columns=columns)).to_csv(
             output / filename, index=False
         )

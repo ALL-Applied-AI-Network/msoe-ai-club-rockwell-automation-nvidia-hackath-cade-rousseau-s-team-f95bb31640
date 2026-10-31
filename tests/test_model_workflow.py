@@ -83,6 +83,9 @@ def test_real_video_decode_path_with_controlled_software_fixture(tmp_path):
     assert result["summary"].right_censored.all()
     assert not result["support"]["shared_decay_supported"]
     assert result["measurements"].production_status.eq("PENDING").all()
+    for name in ("vial_color_measurements.csv", "recovery_curves.csv"):
+        frames = pd.read_csv(result["output_dir"] / name).contact_frame.dropna()
+        assert len(frames) and not any(Path(p).is_absolute() for p in frames)
     make_contact_sheets(result["measurements"], result["output_dir"])
     assert list(result["output_dir"].glob("alignment_roi*.png"))
     # Plots are an optional analysis dependency; decoding is tested regardless.
@@ -126,6 +129,28 @@ def test_report_paths_are_relative_to_base(tmp_path):
         assert item["path"] == "vial_recipes.csv"
         assert "modified_ns" not in item
     assert not Path(report["output_dir"]).is_absolute()
+
+
+def test_default_config_paths_are_relative_to_root(tmp_path):
+    (tmp_path / "analysis/10_29_26").mkdir(parents=True)
+    (tmp_path / "analysis/10_29_26/camera_clock_audit.csv").write_text("vial\n")
+    session = default_config(tmp_path)["sessions"][0]
+    paths = [session[k] for k in ("recipe_csv", "frame_csv", "video", "clock_audit_csv")]
+    assert not any(Path(p).is_absolute() for p in paths)
+    assert session["clock_audit_csv"] == "analysis/10_29_26/camera_clock_audit.csv"
+
+
+def test_committed_report_provenance_matches_files():
+    # Regenerate analysis/10_29_26 whenever its inputs change.
+    root = Path(__file__).parents[1]
+    report = root / "analysis/10_29_26/analysis_report.json"
+    if not report.is_file():
+        pytest.skip("no committed analysis report")
+    for item in json.loads(report.read_text(encoding="utf-8"))["input_provenance"]:
+        assert "modified_ns" not in item
+        path = root / item["path"]
+        if "sha256" in item and path.is_file():
+            assert hashlib.sha256(path.read_bytes()).hexdigest() == item["sha256"], item["path"]
 
 
 def test_timestamped_stills_use_wall_clock_and_never_container_seconds(tmp_path):
