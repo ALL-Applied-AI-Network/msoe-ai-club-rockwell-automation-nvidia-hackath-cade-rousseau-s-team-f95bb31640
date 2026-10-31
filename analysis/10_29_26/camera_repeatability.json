@@ -1,0 +1,14 @@
+{
+  "proven": false,
+  "camera_id": "vial_fill",
+  "calibration_id": "4b36c670a1f71a29f9f8",
+  "threshold": 2.2,
+  "budget_delta_e": 0.7333333333333334,
+  "reasons": [
+    "Camera calibration has no saved alignment/ROI review acknowledgment.",
+    "Lock camera settings or supply a per-frame reference patch.",
+    "Independent held-out color-chart validation is missing.",
+    "Independent stable-vial repeatability controls are missing."
+  ],
+  "controls": []
+}

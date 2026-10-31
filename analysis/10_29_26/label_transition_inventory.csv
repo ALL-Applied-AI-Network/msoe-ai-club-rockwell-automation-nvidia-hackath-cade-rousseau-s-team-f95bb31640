@@ -1,0 +1,7 @@
+transition_id,session_id,previous_recipe_id,next_recipe_id,previous_run_id,first_vial,next_run_labeled_vials,next_run_timed_vials,previous_volume_history_usable,next_volume_history_usable
+10_29_26/run2,10_29_26,1,2,10_29_26/run1,6,5,4,True,False
+10_29_26/run3,10_29_26,2,3,10_29_26/run2,11,2,2,False,True
+10_29_26/run4,10_29_26,3,1,10_29_26/run3,13,4,4,True,True
+10_29_26/run5,10_29_26,1,2,10_29_26/run4,17,3,3,True,True
+10_29_26/run6,10_29_26,2,3,10_29_26/run5,20,3,3,True,True
+10_29_26/run7,10_29_26,3,1,10_29_26/run6,23,5,5,True,True

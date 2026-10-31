@@ -20,6 +20,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 
+from api.baselines import router as baseline_router
 from api.schemas import (
     FrameOut,
     InspectionOut,
@@ -47,6 +48,7 @@ BEFORE_END_S = 0.6  # full vial, cart not moving yet
 WORST_TRANSITION_WEIGHT = 0.5
 
 app = FastAPI(title="Changeover Guard API")
+app.include_router(baseline_router)
 
 
 @cache

@@ -1,0 +1,28 @@
+vial,recipe_id,type,t100_ml,t200_ml,t400_ml,total_ml,dispense_order,start_time,end_time,status,note,start_s,end_s,session_id,timing_observable,requested_ml,dispensed_ml,volume_source,flush_ml,run_number,run_id,vial_key,vial_in_run,cumulative_ml,volume_start_ml,volume_usable,is_transition
+1,1,Single 100,75.0,0.0,0.0,75,T100,2:04:48,2:05:17,ok,,112.61,141.61,10_29_26,True,75.0,75.0,requested_proxy,,1,10_29_26/run1,10_29_26/vial1,1,75.0,0.0,True,False
+2,1,Single 100,75.0,0.0,0.0,75,T100,2:06:00,2:06:29,ok,start estimated from departure,184.61,213.61,10_29_26,True,75.0,75.0,requested_proxy,,1,10_29_26/run1,10_29_26/vial2,2,150.0,75.0,True,False
+3,1,Single 100,75.0,0.0,0.0,75,T100,2:07:12,2:07:42,ok,,256.61,286.61,10_29_26,True,75.0,75.0,requested_proxy,,1,10_29_26/run1,10_29_26/vial3,3,225.0,150.0,True,False
+4,1,Single 100,75.0,0.0,0.0,75,T100,2:08:26,2:08:55,ok,start estimated from departure,330.61,359.61,10_29_26,True,75.0,75.0,requested_proxy,,1,10_29_26/run1,10_29_26/vial4,4,300.0,225.0,True,False
+5,1,Single 100,75.0,0.0,0.0,75,T100,2:09:39,2:10:08,ok,,403.61,432.61,10_29_26,True,75.0,75.0,requested_proxy,,1,10_29_26/run1,10_29_26/vial5,5,375.0,300.0,True,False
+6,2,Single 200,0.0,45.0,0.0,45,T200,2:10:38,2:11:09,ok,,462.61,493.61,10_29_26,True,45.0,45.0,requested_proxy,,2,10_29_26/run2,10_29_26/vial6,1,45.0,0.0,True,True
+7,2,Single 200,0.0,45.0,0.0,45,T200,2:11:35,2:12:08,ok,,519.61,552.61,10_29_26,True,45.0,45.0,requested_proxy,,2,10_29_26/run2,10_29_26/vial7,2,90.0,45.0,True,False
+8,2,Single 200,0.0,45.0,0.0,45,T200,2:12:35,2:13:06,error,operator-noted error,579.61,610.61,10_29_26,True,45.0,45.0,requested_proxy,,2,10_29_26/run2,10_29_26/vial8,3,135.0,90.0,False,False
+9,2,Single 200,0.0,45.0,0.0,45,T200,2:13:32,2:14:12,ok,,636.61,676.61,10_29_26,True,45.0,45.0,requested_proxy,,2,10_29_26/run2,10_29_26/vial9,4,180.0,135.0,False,False
+10,2,Single 200,0.0,45.0,0.0,45,T200,,,error,"operator-noted error; camera blackout 2:14:16-2:15:14, not observable",,,10_29_26,False,45.0,45.0,requested_proxy,,2,10_29_26/run2,10_29_26/vial10,5,225.0,180.0,False,False
+11,3,Single 400,0.0,0.0,75.0,75,T400,2:18:04,2:18:30,ok,,908.61,934.61,10_29_26,True,75.0,75.0,requested_proxy,,3,10_29_26/run3,10_29_26/vial11,1,75.0,0.0,True,True
+12,3,Single 400,0.0,0.0,75.0,75,T400,2:19:06,2:19:31,ok,,970.61,995.61,10_29_26,True,75.0,75.0,requested_proxy,,3,10_29_26/run3,10_29_26/vial12,2,150.0,75.0,True,False
+13,1,Single 100,75.0,0.0,0.0,75,T100,2:20:14,2:20:42,ok,,1038.61,1066.61,10_29_26,True,75.0,75.0,requested_proxy,,4,10_29_26/run4,10_29_26/vial13,1,75.0,0.0,True,True
+14,1,Single 100,75.0,0.0,0.0,75,T100,2:21:26,2:21:55,ok,,1110.61,1139.61,10_29_26,True,75.0,75.0,requested_proxy,,4,10_29_26/run4,10_29_26/vial14,2,150.0,75.0,True,False
+15,1,Single 100,75.0,0.0,0.0,75,T100,2:22:39,2:23:08,ok,,1183.61,1212.61,10_29_26,True,75.0,75.0,requested_proxy,,4,10_29_26/run4,10_29_26/vial15,3,225.0,150.0,True,False
+16,1,Single 100,75.0,0.0,0.0,75,T100,2:23:52,2:24:21,ok,,1256.61,1285.61,10_29_26,True,75.0,75.0,requested_proxy,,4,10_29_26/run4,10_29_26/vial16,4,300.0,225.0,True,False
+17,2,Single 200,0.0,45.0,0.0,45,T200,2:25:52,2:26:24,ok,,1376.61,1408.61,10_29_26,True,45.0,45.0,requested_proxy,,5,10_29_26/run5,10_29_26/vial17,1,45.0,0.0,True,True
+18,2,Single 200,0.0,45.0,0.0,45,T200,2:26:50,2:27:22,ok,,1434.61,1466.61,10_29_26,True,45.0,45.0,requested_proxy,,5,10_29_26/run5,10_29_26/vial18,2,90.0,45.0,True,False
+19,2,Single 200,0.0,45.0,0.0,45,T200,2:27:48,2:28:21,ok,,1492.61,1525.61,10_29_26,True,45.0,45.0,requested_proxy,,5,10_29_26/run5,10_29_26/vial19,3,135.0,90.0,True,False
+20,3,Single 400,0.0,0.0,75.0,75,T400,2:28:58,2:29:22,ok,,1562.61,1586.61,10_29_26,True,75.0,75.0,requested_proxy,,6,10_29_26/run6,10_29_26/vial20,1,75.0,0.0,True,True
+21,3,Single 400,0.0,0.0,75.0,75,T400,2:29:58,2:30:24,ok,,1622.61,1648.61,10_29_26,True,75.0,75.0,requested_proxy,,6,10_29_26/run6,10_29_26/vial21,2,150.0,75.0,True,False
+22,3,Single 400,0.0,0.0,75.0,75,T400,2:30:59,2:31:25,ok,,1683.61,1709.61,10_29_26,True,75.0,75.0,requested_proxy,,6,10_29_26/run6,10_29_26/vial22,3,225.0,150.0,True,False
+23,1,Single 100,75.0,0.0,0.0,75,T100,2:33:07,2:33:36,ok,sheet read 2:32:07; video shows dispense at 2:33:07,1811.61,1840.61,10_29_26,True,75.0,75.0,requested_proxy,,7,10_29_26/run7,10_29_26/vial23,1,75.0,0.0,True,True
+24,1,Single 100,75.0,0.0,0.0,75,T100,2:34:19,2:34:49,ok,,1883.61,1913.61,10_29_26,True,75.0,75.0,requested_proxy,,7,10_29_26/run7,10_29_26/vial24,2,150.0,75.0,True,False
+25,1,Single 100,75.0,0.0,0.0,75,T100,2:35:32,2:36:01,ok,,1956.61,1985.61,10_29_26,True,75.0,75.0,requested_proxy,,7,10_29_26/run7,10_29_26/vial25,3,225.0,150.0,True,False
+26,1,Single 100,75.0,0.0,0.0,75,T100,2:36:45,2:37:13,ok,,2029.61,2057.61,10_29_26,True,75.0,75.0,requested_proxy,,7,10_29_26/run7,10_29_26/vial26,4,300.0,225.0,True,False
+27,1,Single 100,75.0,0.0,0.0,75,T100,2:37:56,2:38:24,ok,,2100.61,2128.61,10_29_26,True,75.0,75.0,requested_proxy,,7,10_29_26/run7,10_29_26/vial27,5,375.0,300.0,True,False

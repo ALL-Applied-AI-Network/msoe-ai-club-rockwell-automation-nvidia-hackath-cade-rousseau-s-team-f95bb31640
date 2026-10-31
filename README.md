@@ -83,6 +83,36 @@ scrap or waste. See `docs/optimization_model.md` for the model, API, validation 
 
 For a demo, `cd web && bun run build` once; then `uv run uvicorn api.main:app` alone serves the UI and API at http://localhost:8000. See `web/README.md`. The Streamlit tools in `dashboard/` still run with `uv run streamlit run dashboard/app.py`.
 
+### Tank color initialization
+
+The operator UI opens on **Tank Initialization**. Select a PNG/JPEG tank top view,
+review or adjust the four liquid regions, and save the CIELAB baselines for
+`T100`, `T200`, `T300`, and `T400`. Confirmed snapshots persist in ignored
+`outputs/baselines/` and can be downloaded as JSON. This flow works without the
+event dataset. T300 is recorded but remains unavailable for recipes.
+
+See [MODEL_PROPOSAL.md](MODEL_PROPOSAL.md) for the volume-aware optical model
+design and the **previous recipe run** state. The notebook below implements clean
+optical-density fitting and observed recovery analysis; production deployment
+still requires camera evidence and validated model artifacts.
+
+### Vial color and transition modeling
+
+Open [`notebooks/transition_analysis.ipynb`](notebooks/transition_analysis.ipynb)
+or run `uv run --group analysis python scripts/analyze_transitions.py` after
+`uv sync --locked --group analysis`. The workflow accepts the October 29
+`vial_filled/labels/vial_recipes.csv` and `vial_fill_frame_labels.csv` schema,
+aligns wall-clock labels using `timestamp - video_s`, and exports measured
+recovery curves, censored transitions, independent-session counts and supported
+optical-density/decay fits. Camera proof and independent clean-model validation
+gate production pass/fail; missing data produces explicit pending/null results.
+See [configuration, calibration controls and validation](docs/transition_analysis.md).
+
+The October 29 stills and labels are committed under `data/10_29_26/`; the three
+session videos are in the `data-10-29-26` GitHub release. From the repo root,
+`gh release download data-10-29-26 && unzip 10_29_26_videos.zip` restores
+`data/10_29_26/*/videos/*.mp4`.
+
 ### Who owns what
 
 | Workstream | Owners | Lives in |

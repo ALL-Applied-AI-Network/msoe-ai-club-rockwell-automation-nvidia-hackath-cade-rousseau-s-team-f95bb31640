@@ -28,7 +28,7 @@ uv run python twin/scenarios.py           # labeled robustness/decay/demo sets -
 graphify update .                         # refresh graphify-out/ code graph (no LLM cost)
 ```
 
-`data/` (real dataset, unzipped from the event guide; must contain `data/vial_fill/image_index.csv`) and `synthetic/` are gitignored. If `uv run pytest` reports 3 skipped, the data is missing or in a wrapper folder. `*.jpg` and `*.mp4` are gitignored too.
+`data/` (real dataset, unzipped from the event guide; must contain `data/vial_fill/image_index.csv`) and `synthetic/` are gitignored. If `uv run pytest` reports 3 skipped, the data is missing or in a wrapper folder. `*.jpg` and `*.mp4` are gitignored too. The exception is `data/10_29_26/` (October 29 session stills and labels), which is committed; its videos are in the `data-10-29-26` GitHub release (`gh release download data-10-29-26 && unzip 10_29_26_videos.zip`). `analysis/10_29_26/` holds the committed transition-workflow outputs; `uv run --group analysis python scripts/analyze_transitions.py` writes a fresh run to `outputs/transition_analysis/<run>/`, which you copy over them to update.
 
 ## Architecture
 

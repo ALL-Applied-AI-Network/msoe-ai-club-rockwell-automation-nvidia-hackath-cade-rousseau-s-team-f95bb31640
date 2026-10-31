@@ -1,0 +1,13 @@
+{
+  "kind": "shared_single_exponential_od",
+  "status": "insufficient_data",
+  "tau_ml": null,
+  "tau_interval_ml": null,
+  "transition_amplitudes_od": {},
+  "validation": [],
+  "scope": "conditional_recovery_after_first_observed_vial",
+  "reason": "Need at least five transitions in three sessions, each with four usable vials and independent clean controls.",
+  "limitation": "No transition-specific, adsorption or multi-exponential parameters are inferred. Flush/loading effects remain unestimated.",
+  "calibration_id": "4b36c670a1f71a29f9f8",
+  "blank_source": "ratio_cancels_reference"
+}
