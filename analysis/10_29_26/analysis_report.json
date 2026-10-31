@@ -106,12 +106,11 @@
     ],
     "note": "Counts describe labels. Multiple changes within one recording do not establish independent sessions or physical recovery."
   },
-  "usable_vials": 16,
+  "usable_vials": 17,
   "source_clock_verified_vials": 25,
   "measurement_quality_flags": {
     "clipped_dark_channels": 8,
     "label_status_not_ok": 2,
-    "uneven_liquid_patch": 1,
     "stale_camera_frame": 1,
     "unobservable_vial_window": 1
   },
