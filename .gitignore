@@ -1,9 +1,14 @@
-data/csi-vial-fill-dataset
+data/*
+!data/10_29_26/
 synthetic/
 outputs/
 work/
 .venv/
 __pycache__/
+*.mp4
+*.jpg
+*.zip
+!data/10_29_26/**
 .pytest_cache/
 .ruff_cache/
 .serena

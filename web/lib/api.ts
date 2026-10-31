@@ -43,17 +43,37 @@ export interface Inspection {
 }
 
 export interface Transition {
+  prev_batch_id: string | null;
+  batch_id: string | null;
   prev_recipe_id: number;
   recipe_id: number;
   first_vial_rgb: RGB | null;
   delta_e: number | null;
   warn: boolean | null;
+  cost: number | null;
+  uncertainty: number | null;
 }
 
 export interface Schedule {
   source: Source;
   transitions: Transition[];
+  submitted: number[] | null;
   suggested: number[] | null;
+  submitted_batch_ids: string[] | null;
+  suggested_batch_ids: string[] | null;
+  fixed_start_recipe_id: number | null;
+  submitted_cost: number | null;
+  suggested_cost: number | null;
+  submitted_transition_sum: number | null;
+  suggested_transition_sum: number | null;
+  submitted_worst_transition: number | null;
+  suggested_worst_transition: number | null;
+  relative_reduction: number | null;
+  transition_sum_reduction: number | null;
+  worst_transition_reduction: number | null;
+  worst_transition_weight: number | null;
+  method: string | null;
+  warnings: string[];
 }
 
 export const imageUrl = (camera: "vial_fill" | "tank_level", filename: string) =>
