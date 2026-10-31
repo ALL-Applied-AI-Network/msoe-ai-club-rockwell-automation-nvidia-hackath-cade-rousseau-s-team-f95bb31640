@@ -108,6 +108,11 @@ optical-density/decay fits. Camera proof and independent clean-model validation
 gate production pass/fail; missing data produces explicit pending/null results.
 See [configuration, calibration controls and validation](docs/transition_analysis.md).
 
+The October 29 stills and labels are committed under `data/10_29_26/`; the three
+session videos are not. Get `10_29_26_videos.zip` from the team chat and unzip it
+at the repo root (`unzip 10_29_26_videos.zip`); it restores
+`data/10_29_26/*/videos/*.mp4`.
+
 ### Who owns what
 
 | Workstream | Owners | Lives in |
