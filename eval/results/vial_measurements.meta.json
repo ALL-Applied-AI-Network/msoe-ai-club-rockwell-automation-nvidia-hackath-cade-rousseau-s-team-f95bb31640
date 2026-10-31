@@ -1,0 +1,58 @@
+{
+  "cache_schema_version": 1,
+  "cache_sha256": "0552c04d920dfad65b1d0ce43aed0d9e4c60376e6228a4abe83b962211c717a6",
+  "dependencies": {
+    "numpy": "2.4.6",
+    "opencv-python-headless": "5.0.0.93",
+    "pandas": "3.0.6",
+    "scikit-image": "0.26.0"
+  },
+  "fingerprint": "c7578b65705659b1da34528683924665099580f8240ddf2b1419e6afba3ea629",
+  "inputs": {
+    "vial_fill_video_5.mp4": {
+      "bytes": 32178488,
+      "sha256": "6f87cec1aeec3b2bae6dac639a317c077a3f175f27abd5fc8430d6953d9d05b9"
+    },
+    "video5_frame_labels.csv": {
+      "bytes": 98682,
+      "sha256": "1c72a2f4f603b154ce24e0f73bd735ba4fe3fea74ee8f1566dccf7d911119cd3"
+    },
+    "video5_vial_recipes.csv": {
+      "bytes": 3286,
+      "sha256": "4baf9246f8b34b803f8e3de4ef9915375311be83f5de91edf8cb249a78254f6d"
+    }
+  },
+  "measurement_code": {
+    "eval/compare.py": "b9452f23a1b570a2ef780c6297a1b4f6cc3a25d12ab553dedf4fe8b3f5e2e2c7",
+    "src/color_monitor/audit.py": "06d438e18bf0dcf2b1c8e430599f6f313d903aaa93ecbadb18d61edfa2111dc1",
+    "src/color_monitor/color.py": "d95b4fc0baffcd3d72e0ede57360b413dd9eebb7ea57061f11c04845035f8d98",
+    "src/color_monitor/config.py": "f63c53ea5a9d7d9d9e5a525264b81a1892eea126fdc4428d1c8ee0db734b786a",
+    "src/color_monitor/extract.py": "ad0196dee9d7111bd6fe03c7de2b136433748123200882a9e25b272212890069",
+    "src/color_monitor/segment.py": "1381e479c9b63b1499d814fe0956a7d027bd7ff6025cb01e2c49528b865d9499"
+  },
+  "settings": {
+    "empty_min_frames": 5,
+    "empty_min_l": 33.0,
+    "holder_dark_l": 25.0,
+    "holder_min_dark_frac": 0.6,
+    "holder_roi": [
+      265,
+      210,
+      110,
+      45
+    ],
+    "liquid_roi": [
+      295,
+      375,
+      32,
+      22
+    ],
+    "max_l": 97.0,
+    "min_l": 3.0,
+    "min_valid_pixels": 100,
+    "sample_stride_s": 1.0,
+    "stable_max_step_de": 1.5,
+    "stable_min_frames": 5
+  },
+  "video_id": 5
+}

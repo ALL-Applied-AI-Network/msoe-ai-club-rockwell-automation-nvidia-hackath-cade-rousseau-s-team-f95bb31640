@@ -1,0 +1,7 @@
+method,threshold_de,scored_vials,carryover_proxies,clean_proxies,true_positive,false_negative,false_positive,true_negative,carryover_recall,miss_rate,false_alarm_rate,precision,accuracy,balanced_accuracy,proxy_label_auc
+Legacy: any known color,2.300000,17,8,9,2,6,3,6,0.250000,0.750000,0.333333,0.400000,0.470588,0.458333,0.444444
+Recipe-aware: intended recipe,2.300000,17,8,9,7,1,4,5,0.875000,0.125000,0.444444,0.636364,0.705882,0.715278,0.902778
+Legacy: any known color,5.000000,17,8,9,0,8,1,8,0.000000,1.000000,0.111111,0.000000,0.470588,0.444444,0.444444
+Recipe-aware: intended recipe,5.000000,17,8,9,7,1,1,8,0.875000,0.125000,0.111111,0.875000,0.882353,0.881944,0.902778
+Legacy: any known color,10.000000,17,8,9,0,8,0,9,0.000000,1.000000,0.000000,,0.529412,0.500000,0.444444
+Recipe-aware: intended recipe,10.000000,17,8,9,4,4,0,9,0.500000,0.500000,0.000000,1.000000,0.764706,0.750000,0.902778

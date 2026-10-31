@@ -1,0 +1,18 @@
+vial_id,recipe_id,previous_recipe_id,transition,position_in_run,expected_outcome,expected_carryover,measured_L,measured_a,measured_b,reference_vial_id,nearest_known_recipe_id,nearest_known_delta_e,intended_recipe_delta_e,legacy_flag,recipe_aware_flag,legacy_decision,recipe_aware_decision
+2,5,5,,2,clean proxy,False,8.305529,-6.196027,2.662189,3,8,1.394733,3.325408,False,False,PASS,PASS
+7,7,6,6->7,1,carryover-risk proxy,True,7.496539,-3.832534,4.501161,9,5,1.294008,15.537615,False,True,PASS,FLAG
+8,7,7,,2,clean proxy,False,13.147408,-5.839171,-12.528195,9,7,1.221384,1.221384,False,False,PASS,PASS
+10,8,7,7->8,1,carryover-risk proxy,True,15.408750,-4.446747,-15.051736,12,7,1.885653,14.636350,False,True,PASS,FLAG
+11,8,8,,2,clean proxy,False,9.447843,-6.076617,0.948282,12,8,2.128223,2.128223,False,False,PASS,PASS
+13,9,8,8->9,1,carryover-risk proxy,True,6.048310,-4.700693,2.302438,15,8,0.940741,1.851391,False,False,PASS,PASS
+14,9,9,,2,clean proxy,False,6.227022,-4.048962,0.617197,15,9,0.429845,0.429845,False,False,PASS,PASS
+16,10,9,9->10,1,carryover-risk proxy,True,5.485658,-3.643276,0.366958,18,9,0.279437,7.287039,False,False,PASS,PASS
+17,10,10,,2,clean proxy,False,12.477592,-3.241682,10.800142,18,10,2.685458,2.685458,False,False,PASS,PASS
+19,11,10,10->11,1,carryover-risk proxy,True,11.838790,-7.802705,5.222585,21,8,4.660316,6.680346,False,False,PASS,PASS
+20,11,11,,2,clean proxy,False,8.662405,-5.551742,-0.845700,21,11,0.858255,0.858255,False,False,PASS,PASS
+22,12,11,11->12,1,carryover-risk proxy,True,6.556670,-4.575132,0.584187,24,9,1.034191,19.022640,False,True,PASS,FLAG
+23,12,12,,2,clean proxy,False,9.065803,4.753202,7.250057,24,12,4.820178,4.820178,False,False,PASS,PASS
+25,13,12,12->13,1,carryover-risk proxy,True,8.893122,5.921982,8.183774,27,12,3.589745,8.854070,False,False,PASS,PASS
+26,13,13,,2,clean proxy,False,6.221987,0.058190,3.725981,27,13,1.122778,1.122778,False,False,PASS,PASS
+28,14,13,13->14,1,carryover-risk proxy,True,6.450578,-1.915277,3.310238,30,13,1.988189,15.814107,False,True,PASS,FLAG
+29,14,14,,2,clean proxy,False,16.147815,-7.561896,5.748085,30,10,5.015213,7.446345,False,False,PASS,PASS
