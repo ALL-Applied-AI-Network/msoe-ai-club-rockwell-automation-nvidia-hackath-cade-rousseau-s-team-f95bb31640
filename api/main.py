@@ -21,7 +21,6 @@ from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from api.baselines import router as baseline_router
-
 from api.schemas import (
     FrameOut,
     InspectionOut,
