@@ -11,6 +11,7 @@ from skimage.color import rgb2lab
 from api import baselines
 from api.main import app
 from changeover_guard.baseline import TANK_IDS, analyze
+from changeover_guard.contracts import TANKS
 
 ROOT = Path(__file__).parents[1]
 
@@ -39,7 +40,8 @@ def test_four_tanks_have_standard_lab_and_correct_bgr_order(image_payload):
         assert record["rgb"] == list(rgb)
         np.testing.assert_allclose(record["lab"], rgb2lab(np.array(rgb).reshape(1, 1, 3) / 255).reshape(3))
         assert record["sample_pixels"] > 40
-    assert result["tanks"]["T_300"]["recipe_enabled"] is False
+    assert result["tanks"]["T300"]["recipe_enabled"] is False
+    assert {k for k, v in result["tanks"].items() if v["recipe_enabled"]} == set(TANKS)
     assert result["confirmed"] is False
 
 
@@ -51,7 +53,7 @@ def test_existing_top_view_images_detect_all_four_tanks(path):
     expected = next(record["requested_rgb"] for record in targets if record["filename"] == path.name)
     for tank, rgb in expected.items():
         # Generated target images are only approximate color fixtures.
-        measured = result["tanks"][tank.replace("T", "T_")]["rgb"]
+        measured = result["tanks"][tank]["rgb"]
         assert np.linalg.norm(np.array(measured) - rgb) < 65
 
 
@@ -72,10 +74,10 @@ def test_rejects_bad_regions_and_images(image_payload):
     regions = {tank: record["region"] for tank, record in result["tanks"].items()}
     with pytest.raises(ValueError, match="exactly one"):
         analyze(payload, "top.png", {})
-    regions["T_100"] = [-.1, 0, .1, .1]
+    regions["T100"] = [-.1, 0, .1, .1]
     with pytest.raises(ValueError, match="inside"):
         analyze(payload, "top.png", regions)
-    regions["T_100"] = regions["T_200"]
+    regions["T100"] = regions["T200"]
     with pytest.raises(ValueError, match="overlap"):
         analyze(payload, "top.png", regions)
     with pytest.raises(ValueError, match="decoded"):

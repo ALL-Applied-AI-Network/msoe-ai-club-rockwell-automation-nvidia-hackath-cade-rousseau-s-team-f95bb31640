@@ -87,9 +87,9 @@ For a demo, `cd web && bun run build` once; then `uv run uvicorn api.main:app` a
 
 The operator UI opens on **Tank Initialization**. Select a PNG/JPEG tank top view,
 review or adjust the four liquid regions, and save the CIELAB baselines for
-`T_100`, `T_200`, `T_300`, and `T_400`. Confirmed snapshots persist in ignored
+`T100`, `T200`, `T300`, and `T400`. Confirmed snapshots persist in ignored
 `outputs/baselines/` and can be downloaded as JSON. This flow works without the
-event dataset. T_300 is recorded but remains unavailable for recipes.
+event dataset. T300 is recorded but remains unavailable for recipes.
 
 See [MODEL_PROPOSAL.md](MODEL_PROPOSAL.md) for the volume-aware optical model
 design and the **previous recipe run** state. The notebook below implements clean

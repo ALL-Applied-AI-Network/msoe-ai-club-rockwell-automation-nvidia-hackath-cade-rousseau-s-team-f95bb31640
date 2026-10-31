@@ -13,7 +13,9 @@ import numpy as np
 from PIL import Image, ImageOps, UnidentifiedImageError
 from skimage.color import rgb2lab
 
-TANK_IDS = ("T_100", "T_200", "T_300", "T_400")
+from changeover_guard.contracts import TANKS
+
+TANK_IDS = ("T100", "T200", "T300", "T400")   # all four tanks the camera sees
 MAX_IMAGE_BYTES = 8 * 1024 * 1024
 
 
@@ -126,7 +128,7 @@ def analyze(payload: bytes, source_name: str, regions: dict | None = None) -> tu
         tanks[tank] = {
             "rgb": color.tolist(), "lab": lab.tolist(), "region": list(regions[tank]),
             "sample_pixels": int(keep.sum()), "lab_spread": spread,
-            "recipe_enabled": tank != "T_300",
+            "recipe_enabled": tank in TANKS,
             "warnings": ["Uneven color: check for walls, reflections or mixed lighting."] if spread > 10 else [],
         }
     return {

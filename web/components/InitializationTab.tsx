@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Card, Swatch } from "@/components/ui";
 import type { RGB } from "@/lib/api";
 
-const TANKS = ["T_100", "T_200", "T_300", "T_400"] as const;
+const TANKS = ["T100", "T200", "T300", "T400"] as const;
 type Tank = typeof TANKS[number];
 type Region = [number, number, number, number];
 type Regions = Partial<Record<Tank, Region>>;
@@ -29,7 +29,7 @@ export default function InitializationTab() {
   const [file, setFile] = useState<{ name: string; base64: string; url: string }>();
   const [baseline, setBaseline] = useState<Baseline>();
   const [regions, setRegions] = useState<Regions>({});
-  const [selected, setSelected] = useState<Tank>("T_100");
+  const [selected, setSelected] = useState<Tank>("T100");
   const [reviewed, setReviewed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -66,7 +66,7 @@ export default function InitializationTab() {
     setReviewed(false);
     setError("");
     setNotice("");
-    setSelected("T_100");
+    setSelected("T100");
     try { localStorage.removeItem(STORAGE_KEY); } catch { /* Storage is optional. */ }
     if (next.size > 8 * 1024 * 1024 || !["image/png", "image/jpeg"].includes(next.type)) {
       setError("Select a PNG or JPEG image smaller than 8 MiB.");
@@ -127,7 +127,7 @@ export default function InitializationTab() {
   return (
     <div className="space-y-5">
       <Card title="Part 1 · Initialize tank colors">
-        <p className="mb-3 text-sm">Select a tank top-view image with the same camera angle as the reference: four tanks across the lower half. The initial labels run left to right: T_100, T_200, T_300, T_400.</p>
+        <p className="mb-3 text-sm">Select a tank top-view image with the same camera angle as the reference: four tanks across the lower half. The initial labels run left to right: T100, T200, T300, T400.</p>
         <label className="block text-sm font-medium">
           Tank Top View
           <input type="file" accept="image/png,image/jpeg" disabled={busy} onChange={event => { void selectFile(event.target.files?.[0]); event.target.value = ""; }} className="mt-2 block w-full text-sm" />
@@ -180,7 +180,7 @@ export default function InitializationTab() {
         <div className="grid gap-4 sm:grid-cols-2">
           {TANKS.map(tank => <div key={tank} className="rounded border border-line p-3">
             <Swatch rgb={baseline.tanks[tank].rgb} size="sm" label={`${tank} = (${baseline.tanks[tank].lab.map(value => value.toFixed(2)).join(", ")})`} />
-            <p className="mt-2 text-xs text-muted">{baseline.tanks[tank].sample_pixels} sampled pixels{tank === "T_300" ? " · Recorded; out of service for recipes" : ""}</p>
+            <p className="mt-2 text-xs text-muted">{baseline.tanks[tank].sample_pixels} sampled pixels{tank === "T300" ? " · Recorded; out of service for recipes" : ""}</p>
             {baseline.tanks[tank].warnings.map(warning => <p key={warning} className="mt-2 text-sm text-flag-ink">{warning}</p>)}
           </div>)}
         </div>

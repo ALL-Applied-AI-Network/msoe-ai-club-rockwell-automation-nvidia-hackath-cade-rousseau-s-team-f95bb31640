@@ -11,7 +11,7 @@ import pandas as pd
 from scipy.optimize import minimize_scalar, nnls
 from scipy.spatial import Delaunay
 
-from changeover_guard.contracts import Recipe
+from changeover_guard.contracts import TANKS, Recipe
 from changeover_guard.transition_analysis import (
     ML_COLUMNS,
     RGB_COLUMNS,
@@ -61,7 +61,7 @@ class CleanOpticalModel:
         recipe.validate()
         if calibration_id is not None and calibration_id != self.calibration_id:
             raise ValueError("optical model belongs to a different camera calibration")
-        f = fractions([[recipe.ml.get(tank, 0) for tank in ("T100", "T200", "T400")]])[
+        f = fractions([[recipe.ml.get(tank, 0) for tank in TANKS]])[
             0
         ]
         od = f @ np.asarray(self.absorbance)
