@@ -1,6 +1,6 @@
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parent.parent.parent
 DATASET = ROOT / "data" / "csi-vial-fill-dataset"
 VIAL_FILL = DATASET / "vial_fill"
 IMAGES = VIAL_FILL / "images"

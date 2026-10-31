@@ -49,6 +49,13 @@ python -m color_monitor
 - Add `--refresh` to re-read the videos, for example after changing settings.
 - It needs the Python packages `opencv-python`, `numpy`, `pandas` and `scikit-image`.
 
+For the paired empty-vial changeover study, open
+`notebooks/paired_empty_vial_transition_analysis.ipynb`. It keeps the original
+transition notebook unchanged, subtracts the Lab offset measured from the same
+vial immediately before filling, compares raw and corrected ΔE00, and tests
+whether target darkness or dominant-tank volume is associated with fewer vials
+to reach the acceptable range.
+
 ## What you get
 
 Everything is written to the `outputs/` folder.

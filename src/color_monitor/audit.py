@@ -35,20 +35,28 @@ def build_vial_table(cycles):
     t = v.merge(c5, on=["video_id", "cycle"], how="left")
     t["label_lag_s"] = t.t_start - t.start_s
     t["previous_recipe_id"] = t.recipe_id.shift(1)
-    t["position_in_run"] = t.groupby("recipe_id").cumcount() + 1
+    run_number = t.recipe_id.ne(t.recipe_id.shift()).cumsum()
+    t["run_id"] = run_number.map(lambda value: f"video5/run{int(value)}")
+    t["position_in_run"] = t.groupby(run_number).cumcount() + 1
     t["status"] = t.status.fillna("no observed cycle")
     cols = ["video_id", "vial_id", "recipe_id", "start_s", "end_s", "t100_ml", "t200_ml", "t400_ml",
-            "dispense_order", "previous_recipe_id", "position_in_run", "cycle", "t_start",
+            "dispense_order", "previous_recipe_id", "run_id", "position_in_run", "cycle", "t_start",
             "label_lag_s", "frames_available", "closed", "stable_n_frames", "stable_t_start", "stable_t_end",
-            "L", "a", "b", "max_step_de", "spread_de", "status"]
+            "L", "a", "b", "empty_L", "empty_a", "empty_b", "empty_n_frames",
+            "empty_spread_de", "max_step_de", "spread_de", "status"]
     return t[cols]
 
 
 def audit_report(frames, cycles, vials):
     n_vials = pd.read_csv(C.DATASET / "videos.csv").set_index("video_id").n_vials
-    lines = ["DATA AUDIT", "=" * 60,
-             f"Frames sampled every {C.SAMPLE_STRIDE_S:g}s from the vial_fill mp4s "
-             "(stills are not used: their timestamps do not match the label timeline)."]
+    lines = [
+        "DATA AUDIT",
+        "=" * 60,
+        (
+            f"Frames sampled every {C.SAMPLE_STRIDE_S:g}s from the vial_fill mp4s "
+            "(stills are not used: their timestamps do not match the label timeline)."
+        ),
+    ]
     for vid, g in cycles.groupby("video_id"):
         bad = int((g.status != "ok").sum())
         lines.append(f"video {vid}: {len(g)} observed vial cycles vs {n_vials[vid]} documented vials; "

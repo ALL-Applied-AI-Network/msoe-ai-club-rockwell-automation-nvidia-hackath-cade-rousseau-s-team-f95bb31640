@@ -38,6 +38,32 @@ def split_cycles(df):
         seg = df.iloc[s:e + 1].copy()
         if len(seg) == 0 or (k == 0 and len(seg) < C.STABLE_MIN_FRAMES and runs):
             continue  # nothing, or the leftover tail of a vial that began before the recording
+        # A physical vial can have a slightly different tint, scuff pattern, or
+        # lighting response from its neighbours.  Retain the empty-vial phase
+        # immediately before this fill so downstream color comparisons can
+        # remove that per-vial background.  The first partial cycle has no
+        # observed pre-fill phase and remains explicitly unpaired.
+        empty_lab = np.full(3, np.nan)
+        empty_n_frames = 0
+        empty_spread_de = np.nan
+        if k > 0:
+            empty = df.iloc[runs[k - 1][0]:runs[k - 1][1] + 1]
+            empty = empty[
+                empty.carrier_present
+                & empty.L.notna()
+                & empty.a.notna()
+                & empty.b.notna()
+            ]
+            if len(empty) >= C.EMPTY_MIN_FRAMES:
+                labs = empty[["L", "a", "b"]].to_numpy(float)
+                empty_lab = np.median(labs, axis=0)
+                empty_n_frames = len(empty)
+                empty_spread_de = float(
+                    de00(labs, empty_lab.reshape(1, 3)).max()
+                )
+        seg["empty_L"], seg["empty_a"], seg["empty_b"] = empty_lab
+        seg["empty_n_frames"] = empty_n_frames
+        seg["empty_spread_de"] = empty_spread_de
         seg["closed"] = k < len(runs)  # False: video ended before the vial was swapped out
         out.append(seg)
     return out
@@ -80,7 +106,12 @@ def measure_cycles(frames):
             w = stable_window(seg)
             row = {"video_id": vid, "cycle": k,
                    "t_start": seg.t_s.iloc[0], "t_end": seg.t_s.iloc[-1],
-                   "frames_available": len(seg), "closed": bool(seg.closed.iloc[0])}
+                   "frames_available": len(seg), "closed": bool(seg.closed.iloc[0]),
+                   "empty_L": seg.empty_L.iloc[0],
+                   "empty_a": seg.empty_a.iloc[0],
+                   "empty_b": seg.empty_b.iloc[0],
+                   "empty_n_frames": int(seg.empty_n_frames.iloc[0]),
+                   "empty_spread_de": seg.empty_spread_de.iloc[0]}
             if w is None:
                 row.update(status="color measurement uncertain")
             else:
