@@ -1,5 +1,6 @@
 import hashlib
 import json
+from pathlib import Path
 
 import cv2
 import numpy as np
@@ -107,6 +108,24 @@ def test_labels_without_video_still_report_the_transition_inventory(tmp_path):
     assert result["report"]["label_inventory"]["transitions"] == 1
     assert result["report"]["status"] == "missing_data"
     assert not result["report"]["production_decisions_enabled"]
+
+
+def test_report_paths_are_relative_to_base(tmp_path):
+    # Committed analysis reports must not leak machine paths or mtimes.
+    recipes = tmp_path / "vial_recipes.csv"
+    recipes.write_text(
+        "vial,recipe_id,t100_ml,t200_ml,t400_ml,start_s,end_s\n1,1,40,0,0,0,1\n"
+    )
+    config = default_config(tmp_path)
+    config["sessions"] = [
+        {"session_id": "labels_only", "recipe_csv": str(recipes), "video": "absent.mp4"}
+    ]
+    report = run_workflow(config, tmp_path, plots=False)["report"]
+    assert report["input_provenance"]
+    for item in report["input_provenance"]:
+        assert item["path"] == "vial_recipes.csv"
+        assert "modified_ns" not in item
+    assert not Path(report["output_dir"]).is_absolute()
 
 
 def test_timestamped_stills_use_wall_clock_and_never_container_seconds(tmp_path):

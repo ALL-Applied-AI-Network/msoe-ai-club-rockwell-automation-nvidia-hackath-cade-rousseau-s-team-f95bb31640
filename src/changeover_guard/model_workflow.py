@@ -141,16 +141,22 @@ def default_config(root: str | Path = ".") -> dict:
     }
 
 
-def _provenance(paths: list[Path]) -> list[dict]:
+def _relative(path: Path, base: Path) -> str:
+    # Reports are committed, so keep machine-specific prefixes out of them.
+    try:
+        return path.resolve().relative_to(base).as_posix()
+    except ValueError:
+        return path.name
+
+
+def _provenance(paths: list[Path], base: Path) -> list[dict]:
     entries = []
     for path in dict.fromkeys(paths):
         if path is None or not path.is_file():
             continue
-        item = {"path": str(path.resolve()), "bytes": path.stat().st_size}
+        item = {"path": _relative(path, base), "bytes": path.stat().st_size}
         if path.suffix.lower() != ".mp4":
             item["sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
-        else:
-            item["modified_ns"] = path.stat().st_mtime_ns
         entries.append(item)
     return entries
 
@@ -438,10 +444,10 @@ def run_workflow(config: dict, base_dir: str | Path = ".", plots=True) -> dict:
     report = {
         "status": status,
         "created_at": datetime.now(UTC).isoformat(),
-        "output_dir": str(output),
+        "output_dir": _relative(output, base),
         "missing_inputs": missing,
         "errors": errors,
-        "input_provenance": _provenance(inputs),
+        "input_provenance": _provenance(inputs, base),
         "label_audits": audits,
         "measurement_rows": len(measurements),
         "measured_vials": 0
