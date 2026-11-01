@@ -66,6 +66,7 @@ def test_paired_correction_removes_a_vial_specific_additive_lab_offset():
         [[35.0, 3.5, 4.5], [35.0, 3.5, 4.5]],
     )
     assert corrected.empty_pair_usable.all()
+    assert corrected.background_adjustment_delta_e00.notna().all()
 
 
 def test_paired_correction_does_not_borrow_a_different_vials_empty_color():
@@ -87,6 +88,28 @@ def test_paired_correction_does_not_borrow_a_different_vials_empty_color():
     assert corrected.empty_pair_usable.tolist() == [True, False]
     assert corrected.loc[1, "empty_pair_reason"] == "paired_empty_color_missing"
     assert corrected.loc[1, "corrected_L"] != corrected.loc[1, "corrected_L"]
+
+
+def test_empty_spread_is_diagnostic_unless_an_explicit_limit_is_supplied():
+    vials = pd.DataFrame(
+        {
+            "L": [30.0],
+            "a": [1.0],
+            "b": [2.0],
+            "empty_L": [50.0],
+            "empty_a": [0.0],
+            "empty_b": [0.0],
+            "empty_n_frames": [5],
+            "empty_spread_de": [8.0],
+        }
+    )
+
+    diagnostic, _ = add_paired_empty_correction(vials)
+    filtered, _ = add_paired_empty_correction(vials, max_empty_spread_de=2.3)
+
+    assert diagnostic.empty_pair_usable.tolist() == [True]
+    assert filtered.empty_pair_usable.tolist() == [False]
+    assert filtered.empty_pair_reason.tolist() == ["paired_empty_color_unstable"]
 
 
 def test_transition_table_and_hypothesis_capture_faster_dark_recipe_recovery():

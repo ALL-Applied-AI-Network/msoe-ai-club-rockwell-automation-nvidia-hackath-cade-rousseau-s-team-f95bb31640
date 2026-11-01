@@ -24,19 +24,24 @@ RECIPE_ML_COLUMNS = ["t100_ml", "t200_ml", "t400_ml"]
 def add_paired_empty_correction(
     vials: pd.DataFrame,
     *,
-    max_empty_spread_de: float = 2.3,
+    max_empty_spread_de: float | None = None,
 ) -> tuple[pd.DataFrame, np.ndarray | None]:
     """Return vials with a paired empty-vial Lab offset removed.
 
     A common median empty-vial color anchors the corrected values so they stay
     in the familiar Lab coordinate system.  Rows without a stable paired empty
     measurement remain NaN instead of borrowing a background from another vial.
+    Empty-frame spread is retained as a diagnostic.  Pass an explicit
+    ``max_empty_spread_de`` only after establishing a repeatability limit; the
+    default does not silently discard every pair using the filled-vial tolerance.
     """
     required = set(LAB_COLUMNS + EMPTY_LAB_COLUMNS)
     missing = required - set(vials)
     if missing:
         raise ValueError(f"paired correction missing columns: {sorted(missing)}")
-    if not np.isfinite(max_empty_spread_de) or max_empty_spread_de <= 0:
+    if max_empty_spread_de is not None and (
+        not np.isfinite(max_empty_spread_de) or max_empty_spread_de <= 0
+    ):
         raise ValueError("max_empty_spread_de must be finite and positive")
 
     result = vials.copy()
@@ -45,9 +50,11 @@ def add_paired_empty_correction(
     paired = filled.notna().all(axis=1) & empty.notna().all(axis=1)
     if "empty_n_frames" in result:
         paired &= pd.to_numeric(result.empty_n_frames, errors="coerce").fillna(0) > 0
+    spread = pd.Series(np.nan, index=result.index, dtype=float)
     if "empty_spread_de" in result:
         spread = pd.to_numeric(result.empty_spread_de, errors="coerce")
-        paired &= spread.notna() & spread.le(max_empty_spread_de)
+        if max_empty_spread_de is not None:
+            paired &= spread.notna() & spread.le(max_empty_spread_de)
 
     result["empty_pair_usable"] = paired
     result["empty_pair_reason"] = "usable"
@@ -56,16 +63,15 @@ def add_paired_empty_correction(
         filled.notna().all(axis=1) & ~empty.notna().all(axis=1),
         "empty_pair_reason",
     ] = "paired_empty_color_missing"
-    if "empty_spread_de" in result:
+    if max_empty_spread_de is not None and "empty_spread_de" in result:
         result.loc[
             empty.notna().all(axis=1)
-            & pd.to_numeric(result.empty_spread_de, errors="coerce").gt(
-                max_empty_spread_de
-            ),
+            & spread.gt(max_empty_spread_de),
             "empty_pair_reason",
         ] = "paired_empty_color_unstable"
 
     result[CORRECTED_LAB_COLUMNS] = np.nan
+    result["background_adjustment_delta_e00"] = np.nan
     if not paired.any():
         result["empty_delta_e00_to_canonical"] = np.nan
         return result, None
@@ -77,6 +83,9 @@ def add_paired_empty_correction(
         + canonical
     )
     result.loc[paired, CORRECTED_LAB_COLUMNS] = corrected
+    result.loc[paired, "background_adjustment_delta_e00"] = de00(
+        filled.loc[paired].to_numpy(float), corrected
+    )
     result["empty_delta_e00_to_canonical"] = np.nan
     result.loc[paired, "empty_delta_e00_to_canonical"] = de00(
         empty.loc[paired].to_numpy(float), canonical.reshape(1, 3)
