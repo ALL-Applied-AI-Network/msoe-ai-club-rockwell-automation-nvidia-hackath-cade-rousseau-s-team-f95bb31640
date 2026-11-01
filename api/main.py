@@ -46,6 +46,7 @@ LABELED_VIDEO = 5  # the only video with recipe labels
 # labels (video5_frame_labels.csv) run about one vial behind the camera.
 BEFORE_END_S = 0.6  # full vial, cart not moving yet
 WORST_TRANSITION_WEIGHT = 0.5
+MAX_QUEUE = 12                               # exact optimizer takes ~1 s at 12 batches, ~1 min at 16
 
 app = FastAPI(title="Changeover Guard API")
 app.include_router(baseline_router)
@@ -243,6 +244,8 @@ def schedule(body: ScheduleIn) -> ScheduleOut:
         raise HTTPException(422, f"unknown recipes: {missing}")
     if not body.recipe_ids:
         raise HTTPException(422, "at least one recipe is required")
+    if len(body.recipe_ids) > MAX_QUEUE:
+        raise HTTPException(422, f"at most {MAX_QUEUE} batches per plan (exact search is exponential)")
 
     selected = [known[recipe_id] for recipe_id in body.recipe_ids]
     matrix = build_transition_matrix(selected)

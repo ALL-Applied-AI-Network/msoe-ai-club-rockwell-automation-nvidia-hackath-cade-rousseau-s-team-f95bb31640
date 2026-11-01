@@ -97,9 +97,10 @@ def _result(
         suggested_transition_sum=suggested_sum,
         submitted_worst_transition=submitted_worst,
         suggested_worst_transition=suggested_worst,
-        relative_reduction=float(max(0.0, reduction)),
-        transition_sum_reduction=float(max(0.0, sum_reduction)),
-        worst_transition_reduction=float(max(0.0, worst_reduction)),
+        # signed: the objective trades total against worst edge, so one metric can get worse
+        relative_reduction=float(reduction),
+        transition_sum_reduction=float(sum_reduction),
+        worst_transition_reduction=float(worst_reduction),
         worst_transition_weight=worst_transition_weight,
         method=method,
     )

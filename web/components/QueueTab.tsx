@@ -6,6 +6,12 @@ import { postSchedule, type Recipe, type Schedule, useApi } from "@/lib/api";
 
 import { Banner, Card, Composition, Note, Swatch } from "./ui";
 
+const MAX_QUEUE = 12;   // matches api/main.py: the exact optimizer is exponential in queue length
+
+/** A signed fractional reduction as "12.3% lower" / "4.0% higher". */
+const change = (reduction: number | null) =>
+  reduction === null ? "—" : `${Math.abs(reduction * 100).toFixed(1)}% ${reduction >= 0 ? "lower" : "higher"}`;
+
 export default function QueueTab() {
   const { data: recipes, error } = useApi<Recipe[]>("/api/recipes");
   const [queue, setQueue] = useState<number[] | null>(null);
@@ -51,11 +57,12 @@ export default function QueueTab() {
         </ol>
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <select
-            className="rounded border border-line bg-white px-2 py-1.5 text-sm"
+            className="rounded border border-line bg-white px-2 py-1.5 text-sm disabled:opacity-40"
             value=""
+            disabled={order.length >= MAX_QUEUE}
             onChange={(e) => e.target.value && update([...order, Number(e.target.value)])}
           >
-            <option value="">+ Add recipe…</option>
+            <option value="">{order.length >= MAX_QUEUE ? `Max ${MAX_QUEUE} batches` : "+ Add recipe…"}</option>
             {recipes.map((r) => (
               <option key={r.recipe_id} value={r.recipe_id}>
                 Recipe {r.recipe_id}
@@ -105,17 +112,17 @@ export default function QueueTab() {
                 {plan.schedule.submitted_transition_sum !== null && plan.schedule.suggested_transition_sum !== null && (
                   <p>
                     Total transition risk: {plan.schedule.submitted_transition_sum.toFixed(1)} → {plan.schedule.suggested_transition_sum.toFixed(1)}
-                    {" "}({((plan.schedule.transition_sum_reduction ?? 0) * 100).toFixed(1)}% lower)
+                    {" "}({change(plan.schedule.transition_sum_reduction)})
                   </p>
                 )}
                 <p>
                   Risk-aware objective: {plan.schedule.submitted_cost.toFixed(1)} → {plan.schedule.suggested_cost.toFixed(1)}
-                  {" "}({((plan.schedule.relative_reduction ?? 0) * 100).toFixed(1)}% lower)
+                  {" "}({change(plan.schedule.relative_reduction)})
                 </p>
                 {plan.schedule.submitted_worst_transition !== null && plan.schedule.suggested_worst_transition !== null && (
                   <p>
-                    Worst-transition reduction: {((plan.schedule.worst_transition_reduction ?? 0) * 100).toFixed(1)}%
-                    {" "}({plan.schedule.submitted_worst_transition.toFixed(1)} → {plan.schedule.suggested_worst_transition.toFixed(1)})
+                    Worst single transition: {plan.schedule.submitted_worst_transition.toFixed(1)} → {plan.schedule.suggested_worst_transition.toFixed(1)}
+                    {" "}({change(plan.schedule.worst_transition_reduction)})
                   </p>
                 )}
               </div>
