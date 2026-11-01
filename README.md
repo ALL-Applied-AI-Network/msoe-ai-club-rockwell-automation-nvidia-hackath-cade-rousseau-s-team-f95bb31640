@@ -97,8 +97,10 @@ See [configuration, calibration controls and validation](docs/transition_analysi
 For tank-initialized CSI training and testing, open
 [`notebooks/operator_diagnostic_system.ipynb`](notebooks/operator_diagnostic_system.ipynb).
 The October 29 overhead photograph initializes the tank colors; training and
-held-out-recipe testing use only `data/csi-vial-fill-dataset/vial_fill/labels/`
-and the matching CSI videos. The notebook exports fold identities, prediction
+vial-disjoint k-NN testing use only `data/csi-vial-fill-dataset/vial_fill/labels/`
+and the matching CSI videos. It trains on settled block tails, evaluates first-vial
+changes, scans unlabeled videos and retains rejected RGB/ROI evidence in a
+continuous three-track timeline. The notebook exports fold identities, prediction
 errors, source ROIs and per-vial operator explanations. Missing CSI inputs or
 training evidence remain explicit; October 29 vials are never a fallback test
 set. Pre-fill inspection is a follow-up suggestion only, with no subtraction.

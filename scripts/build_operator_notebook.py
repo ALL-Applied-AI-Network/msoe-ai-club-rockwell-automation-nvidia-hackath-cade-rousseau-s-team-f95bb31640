@@ -1,4 +1,4 @@
-"""Build the photo-initialized CSI training/testing notebook."""
+"""Build the CSI optical k-NN and blind-sequence diagnostic notebook."""
 
 from pathlib import Path
 
@@ -17,73 +17,47 @@ def build(root: Path):
         "language_info": {"name": "python", "version": "3.11"},
     }
     notebook.cells = [
-        md("""# Changeover Guard — tank initialization and CSI training/testing
+        md("""# Changeover Guard — optical recipe learning and sequence diagnostics
 
-**Data flow:** the supplied October 29 overhead photograph initializes the colors
-of T100, T200 and T400. Training and testing then use **only** the recipe labels
-and matching videos in `data/csi-vial-fill-dataset/vial_fill/`. October 29 vial
-measurements are not training samples, test samples or fallback data here.
+The supplied tank photograph initializes T100/T200/T400 colors. Only CSI labels
+and matching videos supply empirical vial-camera training data. October 29
+production vials are never substituted.
 
-The model first predicts mixture colors from the initialized tank endpoints.
-A fixed regularized camera-transfer correction is learned from CSI training
-vials and tested on whole recipes excluded from that training fold.
+Train on the second and third vials of each three-vial recipe block. Test settled
+vials using **leave-one-vial-out**: exclude all five frames of the tested vial
+from its scaler, model and reference. Directly test each block's first vial
+against the settled calibration. This tests **known recipes**, not unseen recipes.
 
-**Kept from earlier work:** ROI review, quality checks, source-time provenance,
-recipe-run tracking, operator explanations and explicit missing evidence.
-**Changed:** CSI video frames are selected within each labeled fill interval,
-not paired by ordinal cycle number. Evaluation holds out entire recipes across
-every recording. No test vial or test recipe trains its own expected color.
+Rejected RGB values and raw patches remain visible. No pre-fill subtraction is
+applied. Fixed 245 RGB normalization supplies an optical descriptor, not measured
+empty-vial correction or calibrated chemical absorbance.
 
-**No pre-fill subtraction:** only filled-vial color is measured. A pre-fill
-inspection may be suggested when a vial is outside tolerance or inconclusive;
-that suggestion never changes RGB, Lab or ΔE.
-
-Install with `uv sync --locked --group analysis` and select the `.venv` kernel.
-Missing CSI inputs produce a missing-data audit, never October 29 results."""),
+Install `uv sync --locked --group analysis`; select the repository `.venv` kernel."""),
         code("""from pathlib import Path
 
 import pandas as pd
-from IPython.display import HTML, Image, display
+from IPython.display import Image, display
 
 from changeover_guard.diagnostic_baselines import OCT29_TANK_ROIS
-from changeover_guard.diagnostic_workflow import audit_notebooks, run_operator_workflow
+from changeover_guard.optical_sequence import SequenceConfig
+from changeover_guard.optical_workflow import run_operator_workflow
 
 ROOT = Path.cwd().resolve()
 if not (ROOT / 'pyproject.toml').is_file():
     ROOT = ROOT.parent
 assert (ROOT / 'pyproject.toml').is_file(), 'Start in the repository or notebooks directory.'
 TANK_IMAGE = ROOT / 'data/10_29_26/top_view/images/tank_top_level_10_29_26.jpg'
-CSI_DATASET = ROOT / 'data/csi-vial-fill-dataset'
-# CSI_DATASET may also point directly to its vial_fill/labels directory.
+CSI_DATASET = ROOT / 'data/csi-vial-fill-dataset/vial_fill/labels'
 TANK_ROIS = dict(OCT29_TANK_ROIS)
-pd.set_option('display.max_colwidth', 150)
-display(pd.Series({
-    'tank_initialization_image': str(TANK_IMAGE),
-    'training_test_dataset': str(CSI_DATASET),
-    'holdout_unit': 'entire recipe, across every CSI recording',
-    'pre_fill_subtraction': False,
-}))
+# Review these rectangles against the actual camera image (640x480 reference).
+CONFIG = SequenceConfig(liquid_column=(295, 270, 32, 127))
+pd.set_option('display.max_colwidth', 160)
 """),
-        md("""## 1. Review the existing notebook audit
+        md("""## 1. Initialize tank colors
 
-October 29 wall-clock alignment and CSI playback seconds are distinct. The old
-approximately 30-second discrepancy is not applied to CSI videos. CSI sampling
-uses explicit `start_s` / `end_s` labels and checks decoded frame timing.
-The older October 29 analyses remain historical evidence, outside this training
-and testing dataset."""),
-        code("""audit = audit_notebooks(ROOT)
-display(audit[['notebook', 'kept', 'improved_or_not_used']])
-"""),
-        md("""## 2. Initialize tank colors from your overhead photograph
-
-If the original JPG already exists, it is loaded directly. Otherwise use the
-upload control, then rerun Section 3 onward. The image in chat is not automatically
-saved to this filesystem. No generated image or guessed RGB is substituted.
-
-Review the explicit yellow liquid ROIs. Physical tank order is T100, T200,
-T300 (out of service), T400. Only T100/T200/T400 initialize the optical model.
-This photo establishes tank-camera color endpoints, not vial-camera equivalence,
-tank concentration or measured liquid levels."""),
+Upload the original overhead JPG if absent. Tank endpoints are retained separately
+from the vial-camera calibration registry: both camera views need not have equal
+RGB. The k-NN fit uses CSI vial frames. T300 is excluded."""),
         code("""if not TANK_IMAGE.is_file():
     import ipywidgets as widgets
 
@@ -99,149 +73,151 @@ tank concentration or measured liquid levels."""),
         with upload_status:
             upload_status.clear_output()
             try:
-                image = decode_image(payload)
+                decode_image(payload)
                 TANK_IMAGE.parent.mkdir(parents=True, exist_ok=True)
                 TANK_IMAGE.write_bytes(payload)
-                print('Tank initialization image saved. Rerun Section 3 onward.')
-                print('Dimensions:', image.shape[1], 'x', image.shape[0])
+                print('Tank image saved. Rerun Section 2 onward.')
             except ValueError as exc:
                 print('Image rejected:', exc)
 
     tank_upload.observe(save_tank_upload, names='value')
     display(tank_upload, upload_status)
 else:
-    print('Using tank initialization:', TANK_IMAGE.name)
+    print('Tank initialization:', TANK_IMAGE)
 """),
-        md("""## 3. Measure the CSI training and testing dataset
+        md("""## 2. Sample, train, evaluate and detect
 
-The loader discovers `video*_vial_recipes.csv` under the CSI labels folder (and
-supports `vial_recipes.csv` for video 5). The matching source recording is
-`vial_fill/videos/vial_fill_video_N.mp4`. CSV labels alone do not contain measured
-colors; those must come from their matching videos.
+CSV inputs require vials 1–30, recipes 5–14 in three-vial blocks, component/total
+volumes and explicit frame/second bounds. Blank component volumes become zero.
+Five candidate frames span `end_frame-45` to `end_frame-10` inside each label.
+Color crops exclude the top 20% and bottom 15% below a candidate meniscus.
 
-Every color sample belongs to its vial's labeled interval. A settled window must
-contain consecutive valid samples; gaps, camera movement, clipping and missing
-video frames cannot be bridged. No brightness-based empty-vial classifier or
-pre-fill measurement is used. Missing/invalid measurements remain in the report.
-The ROI contact sheets show the actual representative filled-vial video frames."""),
+Gates reject >15% channel pixels below 8 (or mean <5), >15% above 250, channel
+spatial std >35, identical consecutive sampled pixels, or timestamp error >2s.
+The identical-pixel gate is conservative and may flag a static scene. Rejected
+RGBs remain observations; only accepted frames train. Missing pixels are never
+imputed. There are **100 candidate training frames**, with actual counts below.
+
+Every unmatched MP4 is sampled near 5 FPS. Detection requires an observed empty
+scene, holder entry, optical change, a 1.5-second settled plateau and exit.
+The audit measures runtime against the 15-second target without truncating videos."""),
         code("""result = run_operator_workflow(
-    ROOT, tank_image=TANK_IMAGE, tank_rois=TANK_ROIS, dataset_root=CSI_DATASET
+    ROOT, tank_image=TANK_IMAGE, tank_rois=TANK_ROIS,
+    dataset_root=CSI_DATASET, config=CONFIG,
 )
 OUTPUT = result['output_dir']
 measured = result['measurement_result']
 measurements = measured['measurements']
+df_labeled_results = result['df_labeled_results']
 display(pd.Series(result['summary']))
 display(pd.DataFrame(measured['audit']))
-if result['summary']['missing_inputs']:
-    print('Missing inputs:')
-    for path in result['summary']['missing_inputs']:
-        print(' -', path)
-display(Image(filename=str(OUTPUT / 'tank_roi_verification.png'), width=950))
-for contact in sorted(OUTPUT.glob('csi_vial_roi_*.png')):
-    display(Image(filename=str(contact), width=1150))
+for path in result['summary']['missing_inputs']:
+    print('Missing input:', path)
+tank_plot = OUTPUT / 'tank_roi_verification.png'
+if tank_plot.is_file():
+    display(Image(filename=str(tank_plot), width=950))
 if not measurements.empty:
-    display(measurements[['vial_key', 'recipe_id', 'run_id', 'r', 'g', 'b',
-                          'usable', 'quality_flags', 'source_clock_verified']])
+    display(measurements[['vial_key', 'recipe_id', 'r', 'g', 'b', 'usable',
+        'ObservationState', 'quality_flags', 'quality_details', 'decoded_frames',
+        'source_clock_verified']])
 """),
-        md("""## 4. Train on CSI training recipes; test on excluded CSI recipes
+        md("""## 3. Vial-disjoint metrics and locked calibration
 
-**Raw tank model:** linearize the initialized tank RGBs and mix their effective
-optical densities by requested recipe fractions. This predicts an unmapped
-tank-camera color; camera/path differences are expected.
+The vectorized k-NN uses standardized Lab + OD features, k=5 and inverse-distance
+votes/volume fractions. Registry centroids give each contributing vial equal
+weight. Settled test vials are excluded from their scaler, fit, centroid and OOD
+threshold. The final model uses all accepted settled frames for blind videos only.
 
-**Trained tank model:** for each held-out recipe, fit a fixed ridge camera-transfer
-correction in linear RGB on usable late-vial proxies of the **other recipes only**.
-The correction starts from tank-initialized predictions. Its coefficients,
-training identities and training errors are saved for each fold. Identification
-requires enough distinct training recipes and a full-rank feature design.
-
-Every vial of a held-out recipe, including its other recordings, is excluded
-from training. Different recipe IDs with identical tank fractions are held out
-together, even if their total mL differs: this model does not identify a separate
-total-volume effect. Out-of-fold test errors are reported separately from training
-errors. The ridge setting and primary model are fixed before examining test
-outcomes. No test-set threshold tuning is performed; tolerance is ΔE00 < 2.2.
-
-An empirical reference for the held-out recipe would require seeing that recipe
-in training. Under this split it therefore stays **unavailable**, rather than
-borrowing a test vial as its own target. Late-vial and first-changeover groups
-are observational proxies, not independently certified chemical labels."""),
+Accuracy and volume MAE report scored coverage. mL estimates multiply predicted
+fractions by requested totals; they are **not measured delivery**. There are ten
+first-vial samples but nine known recipe changes. True carryover recall needs
+independent contamination labels; report a proxy detection rate and block decay
+instead. Decay uses vial-disjoint references which may differ between folds.
+Clipped recipes retain warnings and raw evidence, never untrusted training frames."""),
         code("""benchmark = result['benchmark']
-display(pd.Series(benchmark['selection']))
-print('Training errors (in-sample, not test accuracy):')
-display(benchmark['training_metrics'])
-print('Held-out CSI test errors:')
 display(benchmark['metrics'])
-fold_table = pd.DataFrame([{
-    'fold_id': fold['fold_id'], 'status': fold['model']['status'],
-    'train_recipe_ids': fold['train_recipe_ids'],
-    'test_recipe_ids': fold['held_out_recipe_ids'],
-    'training_vials': len(fold['train_vial_keys']),
-    'test_vials': len(fold['test_vial_keys']),
-} for fold in benchmark['folds']])
-if not fold_table.empty:
-    display(fold_table)
-if not benchmark['scores'].empty:
-    columns = ['vial_key', 'recipe_id', 'fold_id', 'method', 'partition',
-               'trusted', 'reference_available', 'delta_e', 'reference_reason']
-    display(benchmark['scores'][[c for c in columns if c in benchmark['scores']]])
-    display(Image(filename=str(OUTPUT / 'baseline_comparison.png'), width=1200))
-else:
-    print('No CSI test scores: resolve missing inputs before interpreting model performance.')
+print('Recipe confusion matrix: actual rows, predicted columns; rejected vials counted in coverage.')
+display(benchmark['confusion'])
+display(benchmark['decay'])
+display(pd.DataFrame.from_dict(benchmark['registry'], orient='index'))
+display(pd.DataFrame([{
+    'test_vial': f['test_vial_keys'][0], 'partition': f['partition'],
+    'training_vials': len(f['train_vial_keys']), 'training_frames': len(f['train_frame_keys'])
+} for f in benchmark['folds']]))
 """),
-        md("""## 5. Operator diagnostics on held-out CSI predictions
+        md("""## 4. Labeled timeline — every vial remains visible
 
-The selected prediction for each vial comes from a model that did not train on
-that vial's recipe. Previous-recipe color trajectories use that **same fold's**
-model, avoiding mixed camera domains and inconsistent fold calibrations.
-Predictions outside the training composition hull remain useful extrapolation
-test errors, but cannot trigger a process-cause attribution.
+Top: ΔE00, recipe spans, tolerance 2.2, causal markers and annotated rejection rail.
+Middle: estimated fractions and target outlines; hatching means unavailable.
+Bottom: actual RGB crops, including rejects; missing decoded frames are labeled.
 
-| State | Evidence and response |
-|---|---|
-| Measurement / sensor reject | Bad/missing color or decoded timing: inspect camera, ROI, exposure and source recording. |
-| Carryover suspected | Recipe change plus prior-color trajectory agreement and subsequent decay across consecutive usable vials. Retrospective hypothesis only. |
-| Persistent tank / recipe / fill fault suspected | Persistent deviation, supported unrequested signature, verified tank alert or calibrated abnormal fill: investigate the process. |
-| In-spec production | Requires independent clean references and camera validation; held-out predictions alone cannot authorize release. |
-| Evidence pending | Missing initialization, unidentified model or inconclusive attribution. |
-
-Requested mL is not measured fill. No actual vial-volume or valve-state sensor
-evidence is invented. If a vial is outside tolerance or ambiguous, inspect the
-same vial's glass/position and consider collecting a pre-fill image on a repeat.
-**That is a user suggestion only; no pre-fill color is subtracted.**"""),
-        code("""operator_report = result['operator_report']
-if not operator_report.empty:
-    display(operator_report[['vial_key', 'recipe_id', 'diagnostic_label', 'delta_e',
-        'color_assessment', 'fill_status', 'production_status', 'explanation',
-        'recommended_action', 'prefill_inspection_suggestion']])
-    display(Image(filename=str(OUTPUT / 'operator_timeline.png'), width=1250))
-    display(HTML((OUTPUT / 'operator_dashboard.html').read_text(encoding='utf-8')))
+`IN_SPEC_PASS` means an optical match, with production still pending.
+`TRANSIENT_CARRYOVER` uses the prior/current OD segment, weight 0.05–0.85 and
+residual ≤ CONFIG.tau_mix. Its optical weight is not a measured residual-fluid
+percentage. `SYSTEMIC_FAULT` is an investigation hypothesis. `EVIDENCE_PENDING`
+covers missing calibration/inconclusive causes. Rejected frames get `SENSOR_REJECT`.
+Pre-fill inspection is a follow-up suggestion only when a vial does not pass."""),
+        code("""if not df_labeled_results.empty:
+    display(df_labeled_results[['vial_key', 'recipe_id', 'predicted_recipe_id',
+        'ObservationState', 'Causal_State', 'delta_e', 'alpha', 'mixing_residual',
+        'operator_action', 'prefill_inspection_suggestion']])
+    for path in sorted(OUTPUT.glob('labeled_video*_diagnostics.png')):
+        display(Image(filename=str(path), width=1400))
 else:
-    print('No CSI inspections available. October 29 production vials have not been substituted.')
+    print('No labeled sequence loaded. Resolve listed inputs; no empty chart is rendered.')
 """),
-        md("""## 6. Evidence, artifacts and dataset separation
+        md("""## 5. Blind video inference
 
-`training_folds.json` records fitted coefficients and exact training/test
-identities. `baseline_scores.csv` contains only held-out CSI predictions.
-`baseline_metrics.csv` and the fold records distinguish training errors from test
-errors. `csi_trained_model.json` is a separate final all-CSI refit; it is never
-used to score held-out test vials. Single-recording recipe holdouts test unseen compositions; they do not
-establish generalization to another day or establish chemical purity.
+Viterbi smoothing uses self-transition 0.70 and neutral emissions for rejects.
+Targets are retrospective inferred recipes; the intended recipes remain unknown.
+No fixed three-vial grouping is imposed on detections. Unsettled/truncated events
+remain explicit rejects. Review source counts and detections before interpretation.
 
-Tank initialization, decoded-frame provenance, quality rejects, missing inputs,
-operator explanations and original filled-frame ROIs are exported alongside
-the scores. A missing tank photo, CSI labels or matching video blocks the
-corresponding stage. There is no automatic October 29 data fallback.
-Production and uncertainty remain pending until independently validated."""),
-        code("""display(pd.Series(result['summary']))
-display(pd.DataFrame({'artifact': sorted(p.name for p in OUTPUT.iterdir() if p.is_file())}))
-print('Exports:', OUTPUT.relative_to(ROOT))
+Height calibration needs three monotone observed height/requested-volume levels
+and permits no extrapolation. Otherwise report fractions only. This unverified
+proxy cannot activate a >10% verified-fill fault. A persistent valve error that
+resembles another recipe needs independent intended-recipe evidence."""),
+        code("""display(pd.DataFrame(result['unlabeled_audit']))
+display(pd.Series(result['height_calibration']))
+for video_name, report in result['unlabeled_results'].items():
+    print(video_name, ':', len(report), 'detected vials')
+    if report.empty:
+        print('No events detected; inspect source audit and detector ROI settings.')
+        continue
+    display(report[['vial_idx', 'recipe_id', 'predicted_recipe_id', 'Causal_State',
+        'delta_e', 'estimated_total_ml', 'volume_basis', 'operator_action']])
+    display(Image(filename=str(OUTPUT / f'{video_name}_diagnostics.png'), width=1400))
+"""),
+        md("""## 6. Self-audit and exports
+
+Frame/vial CSVs retain every candidate observation. JSON records include fold
+memberships, scalers/models, registry, frame counts, configuration, timing and
+height calibration. Raw ROI PNGs retain failed measurements. Absent real data
+cannot establish model accuracy, detection coverage, physical causes or runtime."""),
+        code("""assert result['summary']['prefill_subtraction_applied'] is False
 assert result['summary']['october29_vials_used_for_training_or_testing'] is False
-assert result['summary']['prefill_subtraction_applied'] is False
-if not operator_report.empty:
-    assert len(operator_report) == len(measurements)
-    assert operator_report['vial_key'].is_unique
-    assert operator_report['production_status'].eq('PENDING').all()
+if not df_labeled_results.empty:
+    if df_labeled_results['video_id'].nunique() == 1:
+        assert len(df_labeled_results) == 30
+    for _, sequence in df_labeled_results.groupby('video_id'):
+        assert len(sequence) == 30
+        assert sequence['sequence_index'].tolist() == list(range(1, 31))
+    assert df_labeled_results['Causal_State'].isna().sum() == 0
+    assert df_labeled_results['ObservationState'].isin(
+        ['VALID', 'SENSOR_CLIPPED', 'STALE_FRAME', 'UNSETTLED_MOTION']
+    ).all()
+    assert df_labeled_results['production_status'].eq('PENDING').all()
+    for fold in benchmark['folds']:
+        assert not set(fold['train_vial_keys']) & set(fold['test_vial_keys'])
+    print('All labeled rows and states retained; tested vials excluded from training.')
+else:
+    print('Dataset assertions not evaluated: labeled inputs absent.')
+for report in result['unlabeled_results'].values():
+    if not report.empty:
+        assert report['Causal_State'].notna().all()
+        assert report['sequence_index'].tolist() == list(range(1, len(report) + 1))
+display(pd.DataFrame({'artifact': sorted(p.name for p in OUTPUT.iterdir())}))
+print('Exports:', OUTPUT)
 """),
     ]
     output = root / "notebooks/operator_diagnostic_system.ipynb"

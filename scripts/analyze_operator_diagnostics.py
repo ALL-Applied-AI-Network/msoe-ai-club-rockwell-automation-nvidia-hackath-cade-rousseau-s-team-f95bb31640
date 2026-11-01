@@ -4,7 +4,7 @@ import argparse
 import json
 from pathlib import Path
 
-from changeover_guard.diagnostic_workflow import run_operator_workflow
+from changeover_guard.optical_workflow import run_operator_workflow
 
 
 def main():
@@ -24,7 +24,7 @@ def main():
     )
     print(json.dumps(result["summary"], indent=2))
     print("Outputs:", result["output_dir"])
-    return 0 if result["summary"]["status"] == "measured" else 2
+    return 0 if result["summary"]["status"] == "evaluated" else 2
 
 
 if __name__ == "__main__":
