@@ -46,6 +46,7 @@ LABELED_VIDEO = 5  # the only video with recipe labels
 # labels (video5_frame_labels.csv) run about one vial behind the camera.
 BEFORE_END_S = 0.6  # full vial, cart not moving yet
 WORST_TRANSITION_WEIGHT = 0.5
+MAX_QUEUE = 12                               # exact optimizer takes ~1 s at 12 batches, ~1 min at 16
 
 app = FastAPI(title="Changeover Guard API")
 app.include_router(baseline_router)
@@ -184,6 +185,12 @@ def tanks(video_id: int, index: int) -> TanksOut:
     )
 
 
+@app.get("/api/vials")
+def vials() -> list[InspectionOut]:
+    """Every labeled vial of video 5, inspected (about 1 s for all 30)."""
+    return [inspection(vial) for vial in sorted(_vials())]
+
+
 @app.get("/api/vials/{vial}/image")
 def vial_image(vial: int) -> Response:
     """The vial_fill video frame of the full vial, as JPEG."""
@@ -243,6 +250,8 @@ def schedule(body: ScheduleIn) -> ScheduleOut:
         raise HTTPException(422, f"unknown recipes: {missing}")
     if not body.recipe_ids:
         raise HTTPException(422, "at least one recipe is required")
+    if len(body.recipe_ids) > MAX_QUEUE:
+        raise HTTPException(422, f"at most {MAX_QUEUE} batches per plan (exact search is exponential)")
 
     selected = [known[recipe_id] for recipe_id in body.recipe_ids]
     matrix = build_transition_matrix(selected)
@@ -251,28 +260,35 @@ def schedule(body: ScheduleIn) -> ScheduleOut:
         matrix,
         worst_transition_weight=WORST_TRANSITION_WEIGHT,
     )
-    transitions = []
     warnings: list[str] = []
-    for previous, target in pairwise(result.submitted):
-        cost = matrix.transition(previous.recipe_id, target.recipe_id)
-        transitions.append(
-            Transition(
-                prev_batch_id=previous.batch_id,
-                batch_id=target.batch_id,
-                prev_recipe_id=previous.recipe_id,
-                recipe_id=target.recipe_id,
-                first_vial_rgb=cost.first_vial_rgb,
-                delta_e=cost.first_vial_delta_e,
-                warn=cost.warn,
-                cost=cost.total,
-                uncertainty=cost.uncertainty,
+
+    def changeovers(order) -> list[Transition]:
+        out = []
+        for previous, target in pairwise(order):
+            cost = matrix.transition(previous.recipe_id, target.recipe_id)
+            out.append(
+                Transition(
+                    prev_batch_id=previous.batch_id,
+                    batch_id=target.batch_id,
+                    prev_recipe_id=previous.recipe_id,
+                    recipe_id=target.recipe_id,
+                    first_vial_rgb=cost.first_vial_rgb,
+                    delta_e=cost.first_vial_delta_e,
+                    warn=cost.warn,
+                    cost=cost.total,
+                    uncertainty=cost.uncertainty,
+                )
             )
-        )
-        warnings.extend(cost.warnings)
+            warnings.extend(cost.warnings)
+        return out
+
+    transitions = changeovers(result.submitted)
+    suggested_transitions = changeovers(result.suggested)
 
     return ScheduleOut(
         source="model",
         transitions=transitions,
+        suggested_transitions=suggested_transitions,
         submitted=[batch.recipe_id for batch in result.submitted],
         suggested=[batch.recipe_id for batch in result.suggested],
         submitted_batch_ids=[batch.batch_id for batch in result.submitted],
@@ -293,7 +309,7 @@ def schedule(body: ScheduleIn) -> ScheduleOut:
             dict.fromkeys(
                 [
                     *warnings,
-                    "Objective includes a 0.5x penalty on the worst individual transition.",
+                    f"Objective includes a {WORST_TRANSITION_WEIGHT:g}x penalty on the worst individual transition.",
                 ]
             )
         ),

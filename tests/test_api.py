@@ -68,3 +68,16 @@ def test_schedule_optimizes_with_fixed_first_batch_and_duplicate_recipes():
 @needs_data
 def test_schedule_rejects_empty_queue():
     assert client.post("/api/schedule", json={"recipe_ids": []}).status_code == 422
+
+
+@needs_data
+def test_inspection_flags_the_carryover_vial_and_passes_its_batch():
+    first, second, third = (client.get(f"/api/vials/{v}/inspection").json() for v in (7, 8, 9))
+    assert first["source"] == "model" and first["status"] == "FAIL"
+    assert "Recipe 6" in first["cause"]                     # names the recipe that ran before
+    assert second["status"] == third["status"] == "PASS"
+    assert second["cause"] is None and third["cause"] is None
+
+
+def test_schedule_rejects_a_queue_too_long_for_exact_search():
+    assert client.post("/api/schedule", json={"recipe_ids": [6] * 13}).status_code == 422

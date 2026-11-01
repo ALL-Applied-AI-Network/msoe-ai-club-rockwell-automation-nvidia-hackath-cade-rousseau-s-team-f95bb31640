@@ -57,6 +57,7 @@ export interface Transition {
 export interface Schedule {
   source: Source;
   transitions: Transition[];
+  suggested_transitions: Transition[];
   submitted: number[] | null;
   suggested: number[] | null;
   submitted_batch_ids: string[] | null;

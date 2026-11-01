@@ -70,6 +70,7 @@ class ScheduleOut(BaseModel):
     transitions: list[
         Transition
     ]  # predicted carryover for each changeover in the given order
+    suggested_transitions: list[Transition] = Field(default_factory=list)  # same, suggested order
     suggested: list[int] | None = (
         None  # lower-carryover order, once the scheduler exists
     )

@@ -1,18 +1,25 @@
 @import "tailwindcss";
 
-/* Fixed light theme, close to the machine HMI (as in Mat's Streamlit prototype). */
+/* Light, calm control-room palette: one accent, status colors reserved for status. */
 @theme {
-  --color-bg: #eef2f6;
-  --color-ink: #172b3a;
-  --color-muted: #5a6b7a;
-  --color-line: #cfd7df;
-  --color-accent: #125d90;
-  --color-pass: #22824b;
-  --color-pass-soft: #dff3e4;
-  --color-pass-ink: #155a34;
-  --color-flag: #d99815;
-  --color-flag-soft: #fff0ca;
-  --color-flag-ink: #583900;
+  --color-bg: #f3f4f6;
+  --color-surface: #ffffff;
+  --color-ink: #17212b;
+  --color-muted: #5d6874;
+  --color-faint: #8a939d;
+  --color-line: #dde2e7;
+  --color-accent: #1d5c99;
+  --color-accent-soft: #e8f0f8;
+  --color-pass: #1d7a4b;
+  --color-pass-soft: #e5f3eb;
+  --color-fail: #b4261b;
+  --color-fail-soft: #fcebe9;
+  --color-warn: #a86400;
+  --color-warn-soft: #fdf3e1;
+  /* older names some screens still use */
+  --color-flag: #b4261b;
+  --color-flag-soft: #fcebe9;
+  --color-flag-ink: #8c1d14;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -24,4 +31,8 @@
 body {
   background: var(--color-bg);
   color: var(--color-ink);
+}
+
+summary {
+  cursor: pointer;
 }

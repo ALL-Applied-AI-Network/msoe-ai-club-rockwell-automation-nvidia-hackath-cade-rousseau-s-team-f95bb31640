@@ -111,7 +111,10 @@ def transition_cost(
     if previous.recipe_id == target.recipe_id and previous.ml == target.ml:
         return _same_recipe(target, calibration)
 
-    clean = clean_rgb(target, calibration)
+    # Model-predicted clean color, not the measured one: the carryover predictions below are
+    # model outputs, and measured-vs-model differs by the calibration fit residual (up to ~10 dE),
+    # which would add a per-target floor unrelated to changeover risk.
+    clean = clean_rgb(target, calibration, prefer_measured=False)
     target_ml = float(sum(target.ml.values()))
     initial_fraction = (
         config.carryover_ml / (target_ml + config.carryover_ml)

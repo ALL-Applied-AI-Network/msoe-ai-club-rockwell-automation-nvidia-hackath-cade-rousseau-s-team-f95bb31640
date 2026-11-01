@@ -6,11 +6,14 @@ boundary and exposes calibrated ROI helpers so the dashboard and tests draw
 the same regions that the measurement functions actually inspect.
 """
 
+import json
 from datetime import datetime
+from functools import cache
 
 import cv2
 import numpy as np
 
+from changeover_guard.appearance import DEFAULT_CALIBRATION
 from changeover_guard.contracts import TankReading, VialMeasurement
 
 # UPDATED: Narrow liquid strips are calibrated to the supplied top-view frame.
@@ -290,10 +293,31 @@ def tank_fill_levels(image: np.ndarray) -> dict[str, float | None]:
     }
 
 
+@cache
+def _vial_box() -> tuple[int, int, int, int]:
+    """The liquid region the color model was fitted on (twin/calibration.json "box", 640x480)."""
+    return tuple(json.loads(DEFAULT_CALIBRATION.read_text(encoding="utf-8"))["box"])
+
+
 def vial(image: np.ndarray, timestamp: datetime) -> VialMeasurement:
     """Measure the color and fill level of a vial from a BGR image.
     timestamp is the frame's capture time (the `timestamp` column from `dataset.frames`).
+
+    Color is the untrimmed median of the calibration box, the same statistic twin/calibrate.py
+    fitted the color model on, so measured and predicted colors are directly comparable.
+    fill_ml is NaN: for most recipes the liquid top sits behind the holder plate on this camera.
     """
-    # Vial measurement remains a separate contract stub; the changes in this
-    # file concern tank color and tank fill-level camera measurements.
-    raise NotImplementedError
+    if not isinstance(image, np.ndarray) or image.ndim != 3 or image.shape[2] != 3:
+        raise ValueError("image must be a three-channel BGR image")
+    height, width = image.shape[:2]
+    x0, y0, x1, y1 = _vial_box()
+    sx, sy = width / _FILL_REFERENCE_SIZE[0], height / _FILL_REFERENCE_SIZE[1]
+    crop = image[round(y0 * sy):round(y1 * sy), round(x0 * sx):round(x1 * sx)]
+    if crop.size == 0:
+        raise ValueError("vial region is empty for this image size")
+    median_bgr = np.median(crop.reshape(-1, 3), axis=0)
+    return VialMeasurement(
+        timestamp=timestamp,
+        color=tuple(float(v) for v in median_bgr[::-1]),
+        fill_ml=float("nan"),
+    )
