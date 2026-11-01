@@ -21,6 +21,108 @@ CORRECTED_LAB_COLUMNS = ["corrected_L", "corrected_a", "corrected_b"]
 RECIPE_ML_COLUMNS = ["t100_ml", "t200_ml", "t400_ml"]
 
 
+def attach_labeled_prefill_measurements(
+    frames: pd.DataFrame,
+    vials: pd.DataFrame,
+    *,
+    window_s: float = 3.0,
+    min_frames: int = 1,
+) -> pd.DataFrame:
+    """Measure the same vial immediately before its labeled fill starts.
+
+    A cycle-based candidate can still show the previously filled vial while the
+    next vial waits beside it. This function uses only carrier-present frames in
+    ``[start_s - window_s, start_s)`` for the labeled vial.
+    """
+    frame_required = {"video_id", "t_s", "L", "a", "b", "carrier_present"}
+    vial_required = {
+        "video_id", "vial_id", "start_s", "stable_t_start", "stable_t_end",
+        "L", "a", "b",
+    }
+    if missing := frame_required - set(frames):
+        raise ValueError(f"prefill frames missing columns: {sorted(missing)}")
+    if missing := vial_required - set(vials):
+        raise ValueError(f"prefill vials missing columns: {sorted(missing)}")
+    if not np.isfinite(window_s) or window_s <= 0:
+        raise ValueError("window_s must be finite and positive")
+    if min_frames < 1:
+        raise ValueError("min_frames must be at least one")
+
+    source = frames.copy()
+    if not pd.api.types.is_bool_dtype(source.carrier_present):
+        source["carrier_present"] = (
+            source.carrier_present.astype(str)
+            .str.strip()
+            .str.lower()
+            .isin(["true", "1", "yes"])
+        )
+    source["t_s"] = pd.to_numeric(source.t_s, errors="coerce")
+    result = vials.copy()
+    fields = [
+        "empty_t_start", "empty_t_end", "empty_t_measure",
+        "empty_L", "empty_a", "empty_b", "empty_n_frames",
+        "empty_spread_de", "stable_t_measure",
+    ]
+    result[fields] = np.nan
+    result["prefill_source"] = "missing"
+
+    for index, vial in result.iterrows():
+        start_s = pd.to_numeric(pd.Series([vial.start_s]), errors="coerce").iloc[0]
+        if not np.isfinite(start_s):
+            result.loc[index, "prefill_source"] = "missing_labeled_start"
+            continue
+        video = source[source.video_id == vial.video_id].sort_values("t_s")
+        valid = video[LAB_COLUMNS].notna().all(axis=1)
+        prefill = video[
+            video.t_s.ge(start_s - window_s)
+            & video.t_s.lt(start_s)
+            & video.carrier_present.fillna(False)
+            & valid
+        ]
+        if len(prefill) < min_frames:
+            result.loc[index, "prefill_source"] = "insufficient_labeled_prefill"
+            continue
+
+        labs = prefill[LAB_COLUMNS].to_numpy(float)
+        median = np.median(labs, axis=0)
+        representative = int(np.argmin(de00(labs, median.reshape(1, 3))))
+        result.loc[index, fields[:-1]] = [
+            float(prefill.t_s.iloc[0]),
+            float(prefill.t_s.iloc[-1]),
+            float(prefill.t_s.iloc[representative]),
+            *median,
+            len(prefill),
+            float(de00(labs, median.reshape(1, 3)).max()),
+        ]
+        result.loc[index, "prefill_source"] = "labeled_start_prefill_window"
+
+        stable_start = pd.to_numeric(
+            pd.Series([vial.stable_t_start]), errors="coerce"
+        ).iloc[0]
+        stable_end = pd.to_numeric(
+            pd.Series([vial.stable_t_end]), errors="coerce"
+        ).iloc[0]
+        target = vial[LAB_COLUMNS].to_numpy(float)
+        if (
+            np.isfinite(stable_start)
+            and np.isfinite(stable_end)
+            and np.isfinite(target).all()
+        ):
+            stable = video[
+                video.t_s.between(stable_start, stable_end, inclusive="both")
+                & valid
+            ]
+            if not stable.empty:
+                stable_labs = stable[LAB_COLUMNS].to_numpy(float)
+                stable_representative = int(
+                    np.argmin(de00(stable_labs, target.reshape(1, 3)))
+                )
+                result.loc[index, "stable_t_measure"] = float(
+                    stable.t_s.iloc[stable_representative]
+                )
+    return result
+
+
 def add_paired_empty_correction(
     vials: pd.DataFrame,
     *,

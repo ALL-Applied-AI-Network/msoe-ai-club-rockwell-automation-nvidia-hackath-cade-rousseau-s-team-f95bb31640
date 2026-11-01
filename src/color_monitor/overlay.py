@@ -55,7 +55,7 @@ def _measurement_tile(img, title, t_s, scale=0.55):
 
 
 def save_paired_measurement_overlays(vials, path, pairs_per_row=2):
-    """Save empty/filled representative frames for every measurable vial.
+    """Save labeled pre-fill/filled frames for every measurable vial.
 
     Each displayed frame is the sampled frame nearest the median Lab value of
     the window used for measurement.  The yellow rectangle is the exact liquid
@@ -86,7 +86,7 @@ def save_paired_measurement_overlays(vials, path, pairs_per_row=2):
             continue
         prefix = f"vial {int(vial.vial_id)} / recipe {int(vial.recipe_id)}"
         empty_tile = _measurement_tile(
-            empty, f"{prefix} / EMPTY", float(vial.empty_t_measure)
+            empty, f"{prefix} / PREFILL", float(vial.empty_t_measure)
         )
         filled_tile = _measurement_tile(
             filled, f"{prefix} / FILLED", float(vial.stable_t_measure)

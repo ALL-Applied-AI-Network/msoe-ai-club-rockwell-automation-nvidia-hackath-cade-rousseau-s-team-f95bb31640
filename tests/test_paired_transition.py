@@ -3,6 +3,7 @@ import pandas as pd
 
 from src.color_monitor.paired_transition import (
     add_paired_empty_correction,
+    attach_labeled_prefill_measurements,
     transition_effect_table,
 )
 from src.color_monitor.paired_transition import (
@@ -45,6 +46,38 @@ def test_measure_cycles_retains_the_immediately_preceding_empty_vial_color():
     assert cycles.empty_t_measure.tolist() == [0.0, 11.0]
     assert cycles.stable_t_measure.tolist() == [5.0, 16.0]
     assert (cycles.empty_t_end < cycles.t_start).all()
+
+
+def test_labeled_prefill_uses_only_frames_immediately_before_fill_start():
+    frames = _frame_rows(
+        [(20.0, 15.0, 10.0)] * 7
+        + [(50.0, 1.0, 2.0)] * 3
+        + [(30.0, 8.0, 9.0)] * 6
+    )
+    frames["carrier_present"] = True
+    vial = pd.DataFrame(
+        {
+            "video_id": [5],
+            "vial_id": [1],
+            "start_s": [10.0],
+            "stable_t_start": [12.0],
+            "stable_t_end": [15.0],
+            "L": [30.0],
+            "a": [8.0],
+            "b": [9.0],
+        }
+    )
+
+    measured = attach_labeled_prefill_measurements(
+        frames, vial, window_s=3.0
+    ).iloc[0]
+
+    assert measured.empty_t_start == 7.0
+    assert measured.empty_t_end == 9.0
+    assert measured.empty_t_measure == 7.0
+    assert measured.empty_L == 50.0
+    assert measured.stable_t_measure == 12.0
+    assert measured.prefill_source == "labeled_start_prefill_window"
 
 
 def test_paired_correction_removes_a_vial_specific_additive_lab_offset():
