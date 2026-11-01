@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Card, Swatch } from "@/components/ui";
+import { Banner, button as buttons, Panel, rgbCss } from "@/components/ui";
 import type { RGB } from "@/lib/api";
 
 const TANKS = ["T100", "T200", "T300", "T400"] as const;
@@ -17,7 +17,7 @@ interface Baseline {
   tanks: Record<Tank, { rgb: RGB; lab: RGB; region: Region; sample_pixels: number; warnings: string[] }>;
 }
 const STORAGE_KEY = "changeover-guard:baseline-id";
-const button = "rounded border border-line px-3 py-2 text-sm disabled:opacity-40";
+const button = buttons.secondary;
 
 async function readResponse(res: Response): Promise<Baseline> {
   const body = await res.json();
@@ -124,29 +124,42 @@ export default function InitializationTab() {
   }
 
   const imageUrl = file?.url ?? baseline?.image_url;
+  const step = (n: number, label: string) => (
+    <span className="flex items-center gap-2.5">
+      <span className="grid h-6 w-6 place-items-center rounded-full bg-ink text-xs text-white">{n}</span>
+      {label}
+    </span>
+  );
   return (
     <div className="space-y-5">
-      <Card title="Part 1 · Initialize tank colors">
-        <p className="mb-3 text-sm">Select a tank top-view image with the same camera angle as the reference: four tanks across the lower half. The initial labels run left to right: T100, T200, T300, T400.</p>
-        <label className="block text-sm font-medium">
-          Tank Top View
-          <input type="file" accept="image/png,image/jpeg" disabled={busy} onChange={event => { void selectFile(event.target.files?.[0]); event.target.value = ""; }} className="mt-2 block w-full text-sm" />
-        </label>
-        <p className="mt-3 text-sm text-muted">Use consistent lighting and exposure. Values are camera-relative CIELAB estimates (D65, 2° observer, assumed sRGB); a color chart is needed for absolute calibration.</p>
-      </Card>
+      <Panel
+        title={step(1, "Photo of the tanks")}
+        subtitle="A top-down photo from the usual angle: all four tanks across the lower half, T100 to T400 from left to right."
+      >
+        <div className="flex flex-wrap items-center gap-3">
+          <label className={`${buttons.primary} cursor-pointer ${busy ? "pointer-events-none opacity-40" : ""}`}>
+            {file ? "Choose a different photo" : "Choose photo"}
+            <input type="file" accept="image/png,image/jpeg" disabled={busy} onChange={event => { void selectFile(event.target.files?.[0]); event.target.value = ""; }} className="sr-only" />
+          </label>
+          <span className="text-sm text-muted">{file ? file.name : baseline ? baseline.source_name : "PNG or JPEG, up to 8 MB"}</span>
+        </div>
+        <p className="mt-3 text-xs text-faint">Use the same lighting and exposure each shift. Colors are relative to this camera; absolute values would need a color chart.</p>
+      </Panel>
 
-      {error && <p role="alert" className="rounded border border-flag bg-flag-soft p-3 text-sm">{error}</p>}
+      {error && <Banner kind="FAIL"><span role="alert">{error}</span></Banner>}
       {notice && <p role="status" className="text-sm">{notice}</p>}
-      {busy && <p role="status">Measuring tank colors…</p>}
+      {busy && <p role="status" className="text-sm text-muted">Measuring tank colors…</p>}
 
-      {imageUrl && <Card title={baseline?.confirmed ? "Saved tank baseline" : "Review liquid regions"}>
-        {!baseline?.confirmed && <>
-          <p className="mb-3 text-sm">Check that each box covers liquid only. To adjust a box, select its tank and click the center of a clean liquid patch in the image. Use the tank buttons and position controls for keyboard adjustments.</p>
-          <div className="mb-3 flex flex-wrap gap-2">
-            {TANKS.map(tank => <button key={tank} disabled={busy} aria-pressed={selected === tank} onClick={() => setSelected(tank)} className={`${button} ${selected === tank ? "border-accent bg-slate-100" : ""}`}>{tank}</button>)}
+      {imageUrl && <Panel
+        title={baseline?.confirmed ? "Saved tank photo" : step(2, "Check the sampling boxes")}
+        subtitle={baseline?.confirmed ? undefined : "Each box should cover liquid only. Pick a tank, then click the middle of a clean patch of its liquid."}
+      >
+        {!baseline?.confirmed && (
+          <div className="mb-3 flex rounded-md border border-line p-0.5" role="group" aria-label="Tank to place">
+            {TANKS.map(tank => <button key={tank} disabled={busy} aria-pressed={selected === tank} onClick={() => setSelected(tank)} className={`rounded px-3 py-1.5 text-sm ${selected === tank ? "bg-ink text-white" : "text-muted hover:text-ink"}`}>{tank}</button>)}
           </div>
-        </>}
-        <div className="relative overflow-hidden rounded border border-line" onClick={event => {
+        )}
+        <div className={`relative overflow-hidden rounded-md border border-line ${baseline?.confirmed ? "" : "cursor-crosshair"}`} onClick={event => {
           if (!file || busy || baseline?.confirmed) return;
           const box = event.currentTarget.getBoundingClientRect();
           const x = Math.max(0, Math.min(.92, (event.clientX - box.left) / box.width - .04));
@@ -157,47 +170,60 @@ export default function InitializationTab() {
           {/* A local image preview must retain its native aspect ratio for ROI coordinates. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={imageUrl} alt="Uploaded tank top view with labeled liquid sampling regions" className="block h-auto w-full" />
-          {TANKS.map(tank => regions[tank] && <div key={tank} className="pointer-events-none absolute border-2 border-cyan-300" style={{ left: `${regions[tank]![0] * 100}%`, top: `${regions[tank]![1] * 100}%`, width: `${(regions[tank]![2] - regions[tank]![0]) * 100}%`, height: `${(regions[tank]![3] - regions[tank]![1]) * 100}%` }}>
-            <span className="absolute bottom-full left-0 bg-slate-900 px-1 text-xs text-white">{tank}</span>
+          {TANKS.map(tank => regions[tank] && <div key={tank} className={`pointer-events-none absolute border-2 ${selected === tank && !baseline?.confirmed ? "border-yellow-300" : "border-white"}`} style={{ left: `${regions[tank]![0] * 100}%`, top: `${regions[tank]![1] * 100}%`, width: `${(regions[tank]![2] - regions[tank]![0]) * 100}%`, height: `${(regions[tank]![3] - regions[tank]![1]) * 100}%` }}>
+            <span className="absolute bottom-full left-0 rounded-t bg-ink px-1.5 text-xs text-white">{tank}</span>
           </div>)}
         </div>
         {!baseline?.confirmed && <>
-          <fieldset disabled={busy} className="mt-3 flex flex-wrap gap-3">
-            <legend className="mb-2 text-sm">{selected} sampling box (% of image)</legend>
-            {["Left", "Top", "Right", "Bottom"].map((label, index) => <label key={label} className="text-xs">{label}
-              <input type="number" min="0" max="100" step="0.1" value={regions[selected] ? Number((regions[selected]![index] * 100).toFixed(1)) : ""} className="ml-2 w-20 rounded border border-line p-1" onChange={event => {
-                const box: Region = [...(regions[selected] ?? [0, 0, .08, .08])];
-                box[index] = Number(event.target.value) / 100;
-                setRegions({ ...regions, [selected]: box }); setBaseline(undefined); setReviewed(false);
-              }} />
-            </label>)}
-          </fieldset>
-          <button className={`${button} mt-3`} disabled={busy || TANKS.some(tank => !regions[tank])} onClick={() => void analyzeOrSave(false)}>Measure selected regions</button>
+          <details className="mt-3 text-sm">
+            <summary className="text-muted">Adjust the {selected} box by numbers</summary>
+            <fieldset disabled={busy} className="mt-2 flex flex-wrap gap-3">
+              <legend className="sr-only">{selected} sampling box (% of image)</legend>
+              {["Left", "Top", "Right", "Bottom"].map((label, index) => <label key={label} className="text-xs text-muted">{label} %
+                <input type="number" min="0" max="100" step="0.1" value={regions[selected] ? Number((regions[selected]![index] * 100).toFixed(1)) : ""} className="ml-2 w-20 rounded border border-line p-1 text-ink" onChange={event => {
+                  const box: Region = [...(regions[selected] ?? [0, 0, .08, .08])];
+                  box[index] = Number(event.target.value) / 100;
+                  setRegions({ ...regions, [selected]: box }); setBaseline(undefined); setReviewed(false);
+                }} />
+              </label>)}
+            </fieldset>
+          </details>
+          <button className={`${button} mt-3`} disabled={busy || TANKS.some(tank => !regions[tank])} onClick={() => void analyzeOrSave(false)}>Measure these boxes</button>
         </>}
-      </Card>}
+      </Panel>}
 
-      {baseline && <Card title="CIELAB baseline · L*, a*, b*">
-        <div className="grid gap-4 sm:grid-cols-2">
-          {TANKS.map(tank => <div key={tank} className="rounded border border-line p-3">
-            <Swatch rgb={baseline.tanks[tank].rgb} size="sm" label={`${tank} = (${baseline.tanks[tank].lab.map(value => value.toFixed(2)).join(", ")})`} />
-            <p className="mt-2 text-xs text-muted">{baseline.tanks[tank].sample_pixels} sampled pixels{tank === "T300" ? " · Recorded; out of service for recipes" : ""}</p>
-            {baseline.tanks[tank].warnings.map(warning => <p key={warning} className="mt-2 text-sm text-flag-ink">{warning}</p>)}
+      {baseline && <Panel title={baseline.confirmed ? "Tank colors for this shift" : step(3, "Confirm tank colors")}>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {TANKS.map(tank => <div key={tank} className="rounded-md border border-line p-3">
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 shrink-0 rounded-md border border-line" style={{ background: rgbCss(baseline.tanks[tank].rgb) }} />
+              <div>
+                <div className="font-medium">{tank}</div>
+                <div className="text-xs text-muted">{tank === "T300" ? "out of service" : `${baseline.tanks[tank].sample_pixels} pixels sampled`}</div>
+              </div>
+            </div>
+            <div className="mt-2 text-xs text-faint tabular-nums">L*a*b* {baseline.tanks[tank].lab.map(value => value.toFixed(1)).join(", ")}</div>
+            {baseline.tanks[tank].warnings.map(warning => <p key={warning} className="mt-2 text-xs text-warn">{warning}</p>)}
           </div>)}
         </div>
-        {baseline.confirmed ? <div className="mt-4 flex items-center gap-3"><p role="status" className="text-sm">Baseline saved. These four values are the inputs to the proposed recipe model.</p><button className={button} onClick={download}>Download baseline JSON</button></div> : <div className="mt-4 space-y-3">
-          <label className="flex items-start gap-2 text-sm"><input type="checkbox" checked={reviewed} onChange={event => setReviewed(event.target.checked)} />I verified the tank IDs and that all four boxes sample the liquid.</label>
-          <button className={button} disabled={!reviewed || busy} onClick={() => void analyzeOrSave(true)}>Save baseline</button>
+        {baseline.confirmed ? <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-md bg-pass-soft px-4 py-3">
+          <p role="status" className="text-sm font-medium text-pass">Saved. These are the tank colors for this shift.</p>
+          <button className={button} onClick={download}>Download as JSON</button>
+        </div> : <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-line pt-4">
+          <label className="flex items-start gap-2 text-sm"><input type="checkbox" className="mt-0.5" checked={reviewed} onChange={event => setReviewed(event.target.checked)} />The tank labels are right and every box samples liquid.</label>
+          <button className={buttons.primary} disabled={!reviewed || busy} onClick={() => void analyzeOrSave(true)}>Save tank colors</button>
         </div>}
-      </Card>}
+      </Panel>}
 
-      <Card title="Part 2 · Proposed recipe color model">
-        <div className="space-y-3 text-sm">
-          <p><strong>Calibrated optical-density mixing + recipe carryover.</strong> Use each tank’s baseline and its volume in mL to predict the clean recipe color. Learn the tank-to-vial color mapping from measured mixtures; directly averaging Lab colors would not describe dye absorption.</p>
-          <p>Track the <strong>previous recipe run</strong>, its composition, total volume processed, and any flush. A new vial in the same run does not create a new previous recipe. Estimate residual liquid and dye adsorption, then dilute and wash them out as the next recipe flows.</p>
-          <p>The <strong>impurity index (0–100)</strong> represents predicted color impact relative to the clean recipe. Keep the retained-liquid fraction separate: the same residue volume can cause a much greater color shift from dark to light than from light to dark.</p>
-          <p className="text-muted">Model proposal only; predictions require mixture and transition calibration data. The saved baseline is ready for that calibration. Full equations, training plan, and evaluation criteria are in MODEL_PROPOSAL.md.</p>
+      <details className="rounded-lg border border-line bg-surface px-5 py-3.5">
+        <summary className="text-sm font-medium">How these colors are used</summary>
+        <div className="mt-3 space-y-3 text-sm text-muted">
+          <p><strong className="text-ink">Calibrated optical-density mixing + recipe carryover.</strong> Use each tank&rsquo;s baseline and its volume in mL to predict the clean recipe color. Learn the tank-to-vial color mapping from measured mixtures; directly averaging Lab colors would not describe dye absorption.</p>
+          <p>Track the <strong className="text-ink">previous recipe run</strong>, its composition, total volume processed, and any flush. A new vial in the same run does not create a new previous recipe. Estimate residual liquid and dye adsorption, then dilute and wash them out as the next recipe flows.</p>
+          <p>The <strong className="text-ink">impurity index (0&ndash;100)</strong> represents predicted color impact relative to the clean recipe. Keep the retained-liquid fraction separate: the same residue volume can cause a much greater color shift from dark to light than from light to dark.</p>
+          <p className="text-faint">Model proposal only; predictions require mixture and transition calibration data. Full equations, training plan, and evaluation criteria are in MODEL_PROPOSAL.md.</p>
         </div>
-      </Card>
+      </details>
     </div>
   );
 }
