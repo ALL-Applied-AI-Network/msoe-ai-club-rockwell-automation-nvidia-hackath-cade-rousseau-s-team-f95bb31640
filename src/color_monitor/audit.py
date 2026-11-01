@@ -42,6 +42,7 @@ def build_vial_table(cycles):
     cols = ["video_id", "vial_id", "recipe_id", "start_s", "end_s", "t100_ml", "t200_ml", "t400_ml",
             "dispense_order", "previous_recipe_id", "run_id", "position_in_run", "cycle", "t_start",
             "label_lag_s", "frames_available", "closed", "stable_n_frames", "stable_t_start", "stable_t_end",
+            "stable_t_measure", "empty_t_start", "empty_t_end", "empty_t_measure",
             "L", "a", "b", "empty_L", "empty_a", "empty_b", "empty_n_frames",
             "empty_spread_de", "max_step_de", "spread_de", "status"]
     return t[cols]

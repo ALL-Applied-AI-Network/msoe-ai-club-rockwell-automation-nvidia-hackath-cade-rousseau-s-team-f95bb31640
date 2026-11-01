@@ -42,6 +42,8 @@ def test_measure_cycles_retains_the_immediately_preceding_empty_vial_color():
     assert cycles.empty_a.tolist() == [1.0, 3.0]
     assert cycles.empty_n_frames.tolist() == [5, 5]
     assert cycles.empty_spread_de.max() == 0.0
+    assert cycles.empty_t_measure.tolist() == [0.0, 11.0]
+    assert cycles.stable_t_measure.tolist() == [5.0, 16.0]
 
 
 def test_paired_correction_removes_a_vial_specific_additive_lab_offset():

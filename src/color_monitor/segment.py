@@ -46,6 +46,7 @@ def split_cycles(df):
         empty_lab = np.full(3, np.nan)
         empty_n_frames = 0
         empty_spread_de = np.nan
+        empty_t_start = empty_t_end = empty_t_measure = np.nan
         if k > 0:
             empty = df.iloc[runs[k - 1][0]:runs[k - 1][1] + 1]
             empty = empty[
@@ -61,9 +62,18 @@ def split_cycles(df):
                 empty_spread_de = float(
                     de00(labs, empty_lab.reshape(1, 3)).max()
                 )
+                representative = int(
+                    np.argmin(de00(labs, empty_lab.reshape(1, 3)))
+                )
+                empty_t_start = float(empty.t_s.iloc[0])
+                empty_t_end = float(empty.t_s.iloc[-1])
+                empty_t_measure = float(empty.t_s.iloc[representative])
         seg["empty_L"], seg["empty_a"], seg["empty_b"] = empty_lab
         seg["empty_n_frames"] = empty_n_frames
         seg["empty_spread_de"] = empty_spread_de
+        seg["empty_t_start"] = empty_t_start
+        seg["empty_t_end"] = empty_t_end
+        seg["empty_t_measure"] = empty_t_measure
         seg["closed"] = k < len(runs)  # False: video ended before the vial was swapped out
         out.append(seg)
     return out
@@ -89,8 +99,10 @@ def stable_window(seg):
     w = use.iloc[best[0]:best[1] + 1]
     wl = w[["L", "a", "b"]].to_numpy()
     med = np.median(wl, axis=0)
+    representative = int(np.argmin(de00(wl, med.reshape(1, 3))))
     return {
         "stable_t_start": w.t_s.iloc[0], "stable_t_end": w.t_s.iloc[-1],
+        "stable_t_measure": w.t_s.iloc[representative],
         "stable_n_frames": len(w),
         "L": med[0], "a": med[1], "b": med[2],
         "max_step_de": float(step[best[0]:best[1]].max()) if best[1] > best[0] else 0.0,
@@ -111,7 +123,10 @@ def measure_cycles(frames):
                    "empty_a": seg.empty_a.iloc[0],
                    "empty_b": seg.empty_b.iloc[0],
                    "empty_n_frames": int(seg.empty_n_frames.iloc[0]),
-                   "empty_spread_de": seg.empty_spread_de.iloc[0]}
+                   "empty_spread_de": seg.empty_spread_de.iloc[0],
+                   "empty_t_start": seg.empty_t_start.iloc[0],
+                   "empty_t_end": seg.empty_t_end.iloc[0],
+                   "empty_t_measure": seg.empty_t_measure.iloc[0]}
             if w is None:
                 row.update(status="color measurement uncertain")
             else:
