@@ -12,7 +12,10 @@ def test_paired_overlay_writes_empty_and_filled_measurement_frames(
     filled = empty.copy()
     filled[375:397, 295:327] = (20, 80, 180)
 
+    grabbed_times = []
+
     def fake_grab(_video_id, t_s):
+        grabbed_times.append(t_s)
         return empty.copy() if t_s == 10.0 else filled.copy()
 
     monkeypatch.setattr(overlay, "_grab", fake_grab)
@@ -34,3 +37,4 @@ def test_paired_overlay_writes_empty_and_filled_measurement_frames(
     assert contact is not None
     assert contact.shape[1] > contact.shape[0]
     assert int(contact.max()) == 255
+    assert grabbed_times == [10.0, 20.0]
