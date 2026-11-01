@@ -30,4 +30,9 @@ One process, one URL, so it can run on the CSI workstation or the DGX Spark.
 
 ## Model status
 
-Until `measure.vial()`, `mixing.predict()` and `advise` are implemented, inspection and queue results come back with `source: "pending"` and empty model fields. The UI says so instead of showing demo values. Nothing here changes when they land: the API calls them through the signatures in `contracts.py`.
+Inspection and queue results remain `source: "pending"` until validated model,
+camera and fill evidence is supplied. The contract adapters now implement color
+measurement and checks, but abstain for unmeasured fill and unsupported first-vial
+carryover predictions. The standalone operator notebook provides richer
+sequence diagnostics; its exploratory results do not automatically enable API
+production decisions. See `docs/operator_diagnostic_system.md`.

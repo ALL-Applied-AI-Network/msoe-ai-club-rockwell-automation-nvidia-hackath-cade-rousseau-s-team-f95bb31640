@@ -290,10 +290,20 @@ def tank_fill_levels(image: np.ndarray) -> dict[str, float | None]:
     }
 
 
+class VialMeasurementUnavailable(NotImplementedError):
+    """Legacy API pending response for rejected camera measurements."""
+
+
 def vial(image: np.ndarray, timestamp: datetime) -> VialMeasurement:
-    """Measure the color and fill level of a vial from a BGR image.
-    timestamp is the frame's capture time (the `timestamp` column from `dataset.frames`).
+    """Measure camera-relative vial color; fill remains explicitly unmeasured.
+
+    The contract has no nullable fill field, so NaN represents unavailable fill.
+    advise.check abstains instead of converting requested mL into a measurement.
+    The notebook uses richer quality and timestamp evidence than this adapter.
     """
-    # Vial measurement remains a separate contract stub; the changes in this
-    # file concern tank color and tank fill-level camera measurements.
-    raise NotImplementedError
+    from changeover_guard.vial_color import VialCalibration, measure_vial_color
+
+    measured = measure_vial_color(image, VialCalibration())
+    if not measured["usable"]:
+        raise VialMeasurementUnavailable(f"Vial color rejected: {measured['flags']}")
+    return VialMeasurement(timestamp, tuple(measured["rgb"]), float("nan"))
