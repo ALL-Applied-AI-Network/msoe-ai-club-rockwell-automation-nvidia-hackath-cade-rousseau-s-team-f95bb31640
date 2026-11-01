@@ -1,4 +1,4 @@
-"""Build the operator notebook from reviewable source (requires analysis group)."""
+"""Build the photo-initialized CSI training/testing notebook."""
 
 from pathlib import Path
 
@@ -17,32 +17,29 @@ def build(root: Path):
         "language_info": {"name": "python", "version": "3.11"},
     }
     notebook.cells = [
-        md("""# Changeover Guard — operator diagnostic system
+        md("""# Changeover Guard — tank initialization and CSI training/testing
 
-This notebook investigates all **27 October 29 vials**, retaining sensor rejects,
-missing references and uncertain causes. It compares overhead tank initialization
-with same-camera, held-out-run vial references, then explains the available
-recipe-sequence, camera-quality and recovery evidence to an operator.
+**Data flow:** the supplied October 29 overhead photograph initializes the colors
+of T100, T200 and T400. Training and testing then use **only** the recipe labels
+and matching videos in `data/csi-vial-fill-dataset/vial_fill/`. October 29 vial
+measurements are not training samples, test samples or fallback data here.
 
-**Kept:** the existing timestamp/hash audit, the stale vial-9 check, dark-channel
-and uneven-patch rejection, blackout labels, requested-volume provenance and
-recipe-run tracking from `transition_analysis.ipynb` and its reusable modules.
+The model first predicts mixture colors from the initialized tank endpoints.
+A fixed regularized camera-transfer correction is learned from CSI training
+vials and tested on whole recipes excluded from that training fold.
 
-**Refactored:** both baseline methods use the same usable cohort, the same
-threshold and whole-run holdouts. Same-run tails cannot grade themselves. Missing
-T200 targets stay missing. Empty score groups print coverage and reasons rather
-than an unexplained blank chart. The earlier pre-fill comparison mixed reference
-rules and could select the previous filled vial; **no pre-fill subtraction is
-performed here**. Pre-fill inspection is suggested only as operator follow-up.
+**Kept from earlier work:** ROI review, quality checks, source-time provenance,
+recipe-run tracking, operator explanations and explicit missing evidence.
+**Changed:** CSI video frames are selected within each labeled fill interval,
+not paired by ordinal cycle number. Evaluation holds out entire recipes across
+every recording. No test vial or test recipe trains its own expected color.
 
-Attribution is **retrospective and exploratory**: later vials may support a
-recovery trend, stable tails are surrogate clean references, and color agreement
-cannot prove chemical purity. No camera repeatability or calibrated vial-fill
-measurements have been supplied. Production release remains `PENDING`.
+**No pre-fill subtraction:** only filled-vial color is measured. A pre-fill
+inspection may be suggested when a vial is outside tolerance or inconclusive;
+that suggestion never changes RGB, Lab or ΔE.
 
-Run from the repository with `uv sync --locked --group analysis`, then select its
-Python environment in Jupyter. All outputs go into a fresh ignored directory;
-the previous notebooks and their saved analyses are preserved."""),
+Install with `uv sync --locked --group analysis` and select the `.venv` kernel.
+Missing CSI inputs produce a missing-data audit, never October 29 results."""),
         code("""from pathlib import Path
 
 import pandas as pd
@@ -55,37 +52,38 @@ ROOT = Path.cwd().resolve()
 if not (ROOT / 'pyproject.toml').is_file():
     ROOT = ROOT.parent
 assert (ROOT / 'pyproject.toml').is_file(), 'Start in the repository or notebooks directory.'
-pd.set_option('display.max_colwidth', 160)
 TANK_IMAGE = ROOT / 'data/10_29_26/top_view/images/tank_top_level_10_29_26.jpg'
-# Normalized rectangles are specific to the 4:3 photo supplied for this collection.
-# Adjust these if ROI verification shows glare, hardware or a different view.
+CSI_DATASET = ROOT / 'data/csi-vial-fill-dataset'
+# CSI_DATASET may also point directly to its vial_fill/labels directory.
 TANK_ROIS = dict(OCT29_TANK_ROIS)
-display(pd.DataFrame(TANK_ROIS, index=['left', 'top', 'right', 'bottom']).T)
+pd.set_option('display.max_colwidth', 150)
+display(pd.Series({
+    'tank_initialization_image': str(TANK_IMAGE),
+    'training_test_dataset': str(CSI_DATASET),
+    'holdout_unit': 'entire recipe, across every CSI recording',
+    'pre_fill_subtraction': False,
+}))
 """),
-        md("""## 1. Audit all existing notebooks
+        md("""## 1. Review the existing notebook audit
 
-The table below reads each `.ipynb` source, records its imports and source hash,
-and documents reused behavior and limitations. The detailed October 29 assessment
-is `docs/dataset_assessment_10_29_26.md`.
-
-Important clock lesson: the roughly 30-second discrepancy observed at playback
-second 140 is **not assumed to be a constant offset**. Wall labels and MP4 seconds
-are different domains here; source selection uses audited timestamped stills.
-The legacy adapters now measure color, compare against clean color and provide
-investigation advice, but abstain without validated model/fill evidence."""),
+October 29 wall-clock alignment and CSI playback seconds are distinct. The old
+approximately 30-second discrepancy is not applied to CSI videos. CSI sampling
+uses explicit `start_s` / `end_s` labels and checks decoded frame timing.
+The older October 29 analyses remain historical evidence, outside this training
+and testing dataset."""),
         code("""audit = audit_notebooks(ROOT)
-display(audit[['notebook', 'cells', 'code_cells', 'kept', 'improved_or_not_used']])
+display(audit[['notebook', 'kept', 'improved_or_not_used']])
 """),
-        md("""## 2. Supply the original overhead tank image
+        md("""## 2. Initialize tank colors from your overhead photograph
 
-If the JPG exists at the configured path, it is used directly. Otherwise upload
-the original image with the control below, then rerun from Section 3. Images
-visible in chat are not automatically copied into the execution filesystem.
-No generated image or hand-estimated color is substituted for this photograph.
+If the original JPG already exists, it is loaded directly. Otherwise use the
+upload control, then rerun Section 3 onward. The image in chat is not automatically
+saved to this filesystem. No generated image or guessed RGB is substituted.
 
-Physical vessel order is T100, T200, **T300 out of service**, T400. The explicit
-liquid ROIs cover T100/T200/T400 only. This image supplies color signatures, not
-calibrated tank concentration or liquid-level measurements."""),
+Review the explicit yellow liquid ROIs. Physical tank order is T100, T200,
+T300 (out of service), T400. Only T100/T200/T400 initialize the optical model.
+This photo establishes tank-camera color endpoints, not vial-camera equivalence,
+tank concentration or measured liquid levels."""),
         code("""if not TANK_IMAGE.is_file():
     import ipywidgets as widgets
 
@@ -97,153 +95,149 @@ calibrated tank concentration or liquid-level measurements."""),
     def save_tank_upload(change):
         if not tank_upload.value:
             return
-        upload = tank_upload.value[0]
-        payload = bytes(upload['content'])
+        payload = bytes(tank_upload.value[0]['content'])
         with upload_status:
             upload_status.clear_output()
             try:
                 image = decode_image(payload)
                 TANK_IMAGE.parent.mkdir(parents=True, exist_ok=True)
                 TANK_IMAGE.write_bytes(payload)
-                print('Saved original tank image:', TANK_IMAGE.relative_to(ROOT))
-                print('Image dimensions:', image.shape[1], 'x', image.shape[0])
-                print('Rerun Section 3 onward to compare both baseline methods.')
+                print('Tank initialization image saved. Rerun Section 3 onward.')
+                print('Dimensions:', image.shape[1], 'x', image.shape[0])
             except ValueError as exc:
                 print('Image rejected:', exc)
 
     tank_upload.observe(save_tank_upload, names='value')
     display(tank_upload, upload_status)
-    print('Approach A stays pending until the original image is saved/uploaded.')
 else:
-    print('Using:', TANK_IMAGE.relative_to(ROOT))
+    print('Using tank initialization:', TANK_IMAGE.name)
 """),
-        md("""## 3. Re-measure the October 29 sequence and review exact ROIs
+        md("""## 3. Measure the CSI training and testing dataset
 
-The workflow runs from raw labels/images, using the established quality gates.
-It does not reload a prior successful fit. In the supplied collection, 26 images
-exist for 27 vials; 16 readings pass the original checks. Rejects remain in the
-sequence and do not receive numerical color scores.
+The loader discovers `video*_vial_recipes.csv` under the CSI labels folder (and
+supports `vial_recipes.csv` for video 5). The matching source recording is
+`vial_fill/videos/vial_fill_video_N.mp4`. CSV labels alone do not contain measured
+colors; those must come from their matching videos.
 
-The following figures show the tank liquid patches and all selected vial source
-frames. Clock ages, image hashes and rejection flags are exported for review."""),
-        code("""result = run_operator_workflow(ROOT, tank_image=TANK_IMAGE, tank_rois=TANK_ROIS)
+Every color sample belongs to its vial's labeled interval. A settled window must
+contain consecutive valid samples; gaps, camera movement, clipping and missing
+video frames cannot be bridged. No brightness-based empty-vial classifier or
+pre-fill measurement is used. Missing/invalid measurements remain in the report.
+The ROI contact sheets show the actual representative filled-vial video frames."""),
+        code("""result = run_operator_workflow(
+    ROOT, tank_image=TANK_IMAGE, tank_rois=TANK_ROIS, dataset_root=CSI_DATASET
+)
 OUTPUT = result['output_dir']
 measured = result['measurement_result']
 measurements = measured['measurements']
 display(pd.Series(result['summary']))
-display(pd.DataFrame(measured['report'].get('label_audits', [])))
-display(pd.Series(measured['report'].get('measurement_quality_flags', {}), name='flagged_vials'))
+display(pd.DataFrame(measured['audit']))
+if result['summary']['missing_inputs']:
+    print('Missing inputs:')
+    for path in result['summary']['missing_inputs']:
+        print(' -', path)
 display(Image(filename=str(OUTPUT / 'tank_roi_verification.png'), width=950))
-for contact in sorted(OUTPUT.glob('alignment_roi_*.png')):
+for contact in sorted(OUTPUT.glob('csi_vial_roi_*.png')):
     display(Image(filename=str(contact), width=1150))
 if not measurements.empty:
-    display(measurements[['vial', 'recipe_id', 'run_id', 'r', 'g', 'b', 'usable',
-                          'source_clock_verified', 'source_timestamp_age_s',
-                          'quality_flags', 'volume_source']])
+    display(measurements[['vial_key', 'recipe_id', 'run_id', 'r', 'g', 'b',
+                          'usable', 'quality_flags', 'source_clock_verified']])
 """),
-        md("""## 4. Controlled A vs B initialization experiment
+        md("""## 4. Train on CSI training recipes; test on excluded CSI recipes
 
-**A — overhead tank camera:** convert pure-tank RGB to linear RGB, compute signed
-effective optical density relative to T100, and combine by recipe volume
-fractions. Pure recipes reproduce their measured tank endpoint. This candidate
-has **no learned camera-transfer or path-length calibration**. Total mL effects
-are unestimated; tank RGB is not silently certified as expected vial RGB.
+**Raw tank model:** linearize the initialized tank RGBs and mix their effective
+optical densities by requested recipe fractions. This predicts an unmapped
+tank-camera color; camera/path differences are expected.
 
-**B — vial camera:** select stable two-vial tails, then build the target from
-matching recipe/composition tails in **other runs only**. No self-target fallback
-is allowed. Future runs can supply references, so this is retrospective analysis.
+**Trained tank model:** for each held-out recipe, fit a fixed ridge camera-transfer
+correction in linear RGB on usable late-vial proxies of the **other recipes only**.
+The correction starts from tank-initialized predictions. Its coefficients,
+training identities and training errors are saved for each fold. Identification
+requires enough distinct training recipes and a full-rank feature design.
 
-Both use the same 16 quality-eligible vials and **ΔE00 < 2.2**. Comparative metrics
-use the **intersection of scored vial IDs**. All rows, including unscored ones,
-remain in `baseline_scores.csv` with reasons and reference identities.
+Every vial of a held-out recipe, including its other recordings, is excluded
+from training. Different recipe IDs with identical tank fractions are held out
+together, even if their total mL differs: this model does not identify a separate
+total-volume effect. Out-of-fold test errors are reported separately from training
+errors. The ridge setting and primary model are fixed before examining test
+outcomes. No test-set threshold tuning is performed; tolerance is ΔE00 < 2.2.
 
-First changeover vials and the last two vials of runs are **proxy groups**, not
-independent clean/contaminated labels. Evaluation late-vial membership is fixed
-by position, not by low measured error. Balanced proxy accuracy is the average
-of first-vial alert rate and late-vial match rate; it is not production accuracy.
-Selection requires both proxy groups in common coverage. Otherwise B can be
-used provisionally, and the notebook explicitly declares no head-to-head winner."""),
+An empirical reference for the held-out recipe would require seeing that recipe
+in training. Under this split it therefore stays **unavailable**, rather than
+borrowing a test vial as its own target. Late-vial and first-changeover groups
+are observational proxies, not independently certified chemical labels."""),
         code("""benchmark = result['benchmark']
-display(benchmark['metrics'])
 display(pd.Series(benchmark['selection']))
+print('Training errors (in-sample, not test accuracy):')
+display(benchmark['training_metrics'])
+print('Held-out CSI test errors:')
+display(benchmark['metrics'])
+fold_table = pd.DataFrame([{
+    'fold_id': fold['fold_id'], 'status': fold['model']['status'],
+    'train_recipe_ids': fold['train_recipe_ids'],
+    'test_recipe_ids': fold['held_out_recipe_ids'],
+    'training_vials': len(fold['train_vial_keys']),
+    'test_vials': len(fold['test_vial_keys']),
+} for fold in benchmark['folds']])
+if not fold_table.empty:
+    display(fold_table)
 if not benchmark['scores'].empty:
-    display(benchmark['scores'][['vial', 'recipe_id', 'method', 'trusted',
-        'evaluation_role', 'reference_available', 'delta_e', 'paired_comparison',
-        'reference_runs', 'reference_reason']])
-comparison_plot = OUTPUT / 'baseline_comparison.png'
-if comparison_plot.is_file():
-    display(Image(filename=str(comparison_plot), width=1150))
-"""),
-        md("""## 5. Operator diagnostic and attribution engine
-
-The engine inspects every label row in sequence, using the selected baseline.
-
-| State | Required observation and operator interpretation |
-|---|---|
-| Measurement / sensor reject | Clipping, stale/unverified timing, uneven patch, missing frame or operator-error label. Reacquire trustworthy evidence before judging mixture. |
-| Changeover carryover suspected | A recipe change, an identifiable previous-to-current color trajectory, and decreasing error across at least three consecutive usable run observations. This uses later observations and is a hypothesis. |
-| Persistent tank / recipe / fill fault suspected | Persistent observed deviation without decay, an unrequested in-camera tank signature, a verified tank-state alert, or independently calibrated abnormal fill. Inspect hardware and recipe; no automatic root-cause proof. |
-| In-spec / clean production | Within tolerance **and** validated independent reference and camera evidence. An exploratory match alone cannot release production. |
-| Evidence pending | Missing reference, ambiguous trajectory or incomplete calibration. The report records the available color assessment and an explicit next investigation. |
-
-Requested recipe mL is not a fill measurement. A static tank photograph does not
-prove valve malfunction or abnormal tank level. No expected clearance volume is
-invented. A Lab trajectory weight is a color-coordinate parameter, not a residual
-chemical fraction. No confidence interval is reported without camera evidence.
-
-**Pre-fill policy:** raw filled-vial colors are used throughout. If a vial is
-outside tolerance, rejected or lacks sufficient evidence, the operator may be
-advised to inspect/capture the same vial before dispensing. There is no automatic
-pre-fill subtraction, normalization or correction in this notebook."""),
-        code("""operator_report = result['operator_report']
-if operator_report.empty:
-    print('No measurements: inspect the missing-input audit before running diagnostics.')
+    columns = ['vial_key', 'recipe_id', 'fold_id', 'method', 'partition',
+               'trusted', 'reference_available', 'delta_e', 'reference_reason']
+    display(benchmark['scores'][[c for c in columns if c in benchmark['scores']]])
+    display(Image(filename=str(OUTPUT / 'baseline_comparison.png'), width=1200))
 else:
-    display(operator_report[['vial', 'recipe_id', 'diagnostic_label', 'delta_e',
+    print('No CSI test scores: resolve missing inputs before interpreting model performance.')
+"""),
+        md("""## 5. Operator diagnostics on held-out CSI predictions
+
+The selected prediction for each vial comes from a model that did not train on
+that vial's recipe. Previous-recipe color trajectories use that **same fold's**
+model, avoiding mixed camera domains and inconsistent fold calibrations.
+Predictions outside the training composition hull remain useful extrapolation
+test errors, but cannot trigger a process-cause attribution.
+
+| State | Evidence and response |
+|---|---|
+| Measurement / sensor reject | Bad/missing color or decoded timing: inspect camera, ROI, exposure and source recording. |
+| Carryover suspected | Recipe change plus prior-color trajectory agreement and subsequent decay across consecutive usable vials. Retrospective hypothesis only. |
+| Persistent tank / recipe / fill fault suspected | Persistent deviation, supported unrequested signature, verified tank alert or calibrated abnormal fill: investigate the process. |
+| In-spec production | Requires independent clean references and camera validation; held-out predictions alone cannot authorize release. |
+| Evidence pending | Missing initialization, unidentified model or inconclusive attribution. |
+
+Requested mL is not measured fill. No actual vial-volume or valve-state sensor
+evidence is invented. If a vial is outside tolerance or ambiguous, inspect the
+same vial's glass/position and consider collecting a pre-fill image on a repeat.
+**That is a user suggestion only; no pre-fill color is subtracted.**"""),
+        code("""operator_report = result['operator_report']
+if not operator_report.empty:
+    display(operator_report[['vial_key', 'recipe_id', 'diagnostic_label', 'delta_e',
         'color_assessment', 'fill_status', 'production_status', 'explanation',
         'recommended_action', 'prefill_inspection_suggestion']])
-    display(operator_report[['vial', 'run_id', 'run_decay_supported',
-        'trajectory_supported', 'trajectory_residual_delta_e', 'prior_color_weight',
-        'trend_usable_prefix_vials', 'evidence']])
+    display(Image(filename=str(OUTPUT / 'operator_timeline.png'), width=1250))
+    display(HTML((OUTPUT / 'operator_dashboard.html').read_text(encoding='utf-8')))
+else:
+    print('No CSI inspections available. October 29 production vials have not been substituted.')
 """),
-        md("""## 6. All-vial timeline and filterable operator dashboard
+        md("""## 6. Evidence, artifacts and dataset separation
 
-An x at zero identifies a sensor reject; an empty square marks a missing
-reference. Neither means zero color error. Missing scores create gaps in the
-ΔE curve. The state strip keeps every vial
-visible, including the blackout. The exported HTML dashboard can be opened
-without Jupyter and filters explanations by attribution state."""),
-        code("""timeline = OUTPUT / 'operator_timeline.png'
-if timeline.is_file():
-    display(Image(filename=str(timeline), width=1250))
-dashboard = OUTPUT / 'operator_dashboard.html'
-if dashboard.is_file():
-    display(HTML(dashboard.read_text(encoding='utf-8')))
-"""),
-        md("""## 7. Evidence gates, exports and interpretation
+`training_folds.json` records fitted coefficients and exact training/test
+identities. `baseline_scores.csv` contains only held-out CSI predictions.
+`baseline_metrics.csv` and the fold records distinguish training errors from test
+errors. `csi_trained_model.json` is a separate final all-CSI refit; it is never
+used to score held-out test vials. Single-recording recipe holdouts test unseen compositions; they do not
+establish generalization to another day or establish chemical purity.
 
-The original analysis found about **14.94 and 15.23 ΔE00** at the T400 → T100
-starts, vials 13 and 23. A high initial difference and later recovery suggest a
-process worth investigating; cause attribution still requires trajectory and
-reference evidence. A censored run is not assumed to have cleared.
-
-Missing T200 references, clipped channels, short follow-up and one recording
-session limit conclusions. The original constrained clean model and carryover
-artifacts remain `insufficient_data`. This diagnostic engine does not manufacture
-their coefficients, mixture purity, measured fill, a flush recommendation or an
-unseen first-vial forecast. Production remains pending until the evidence gates
-are met. No pre-fill measurements are used in numerical scoring.
-
-Adding the overhead image reruns A and the paired comparison; it cannot on its
-own establish camera transfer accuracy or independent clean ground truth."""),
+Tank initialization, decoded-frame provenance, quality rejects, missing inputs,
+operator explanations and original filled-frame ROIs are exported alongside
+the scores. A missing tank photo, CSI labels or matching video blocks the
+corresponding stage. There is no automatic October 29 data fallback.
+Production and uncertainty remain pending until independently validated."""),
         code("""display(pd.Series(result['summary']))
-display(pd.Series(measured['repeatability']))
-display(pd.Series(measured['carryover']))
-display(measured['summary'])
 display(pd.DataFrame({'artifact': sorted(p.name for p in OUTPUT.iterdir() if p.is_file())}))
 print('Exports:', OUTPUT.relative_to(ROOT))
+assert result['summary']['october29_vials_used_for_training_or_testing'] is False
 assert result['summary']['prefill_subtraction_applied'] is False
-assert result['summary']['root_causes_confirmed'] == 0
 if not operator_report.empty:
     assert len(operator_report) == len(measurements)
     assert operator_report['vial_key'].is_unique

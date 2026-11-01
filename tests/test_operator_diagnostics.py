@@ -16,7 +16,11 @@ from changeover_guard.diagnostic_baselines import (
     extract_tank_baselines,
     tank_optical_prediction,
 )
-from changeover_guard.diagnostic_workflow import dashboard_html, run_operator_workflow
+from changeover_guard.diagnostic_workflow import (
+    dashboard_html,
+    run_oct29_operator_workflow,
+    run_operator_workflow,
+)
 from changeover_guard.operator_diagnostics import diagnose_vials, trajectory_evidence
 from changeover_guard.vial_color import lab_values
 
@@ -296,6 +300,38 @@ def test_unmapped_tank_candidate_cannot_become_a_chemical_diagnosis(no_tank):
     assert result.color_assessment.eq("cross_camera_candidate_only").all()
 
 
+def test_extrapolation_test_error_is_retained_without_process_attribution(no_tank):
+    data = sequence()
+    benchmark = compare_baselines(data, no_tank)
+    selected = benchmark["scores"].method.eq(METHODS[1])
+    benchmark["selection"]["primary_method"] = "A_trained_tank_camera"
+    benchmark["scores"].loc[selected, "method"] = "A_trained_tank_camera"
+    benchmark["scores"].loc[selected, "reference_scope"] = (
+        "csi_train_only_camera_transfer"
+    )
+    benchmark["scores"]["composition_in_training_hull"] = False
+    result = diagnose_vials(data, benchmark)
+    row = result[result.run_id.eq("run2")].iloc[0]
+    assert row.diagnostic_state == "evidence_pending"
+    assert row.color_assessment == "outside_model_domain"
+    assert row.delta_e > 0
+    assert not row.composition_in_training_hull
+    assert "extrapolation" in row.explanation
+
+
+def test_unvalidated_previous_endpoint_cannot_establish_carryover(no_tank):
+    data = sequence()
+    benchmark = compare_baselines(data, no_tank)
+    for channel, value in zip(["r", "g", "b"], [30.0, 60.0, 90.0]):
+        benchmark["scores"][f"previous_target_{channel}"] = value
+    benchmark["scores"]["previous_composition_in_training_hull"] = False
+    report = diagnose_vials(data, benchmark)
+    first = report[report.run_id.eq("run2")].iloc[0]
+    assert first.run_decay_supported
+    assert not first.trajectory_supported
+    assert first.diagnostic_state == "evidence_pending"
+
+
 def test_duplicate_measurements_are_rejected_instead_of_double_counted(no_tank):
     data = sequence()
     with pytest.raises(ValueError, match="unique"):
@@ -332,7 +368,7 @@ def test_optional_figures_preserve_missing_targets_and_all_vials(no_tank, tmp_pa
 )
 def test_oct29_real_workflow_preserves_27_labels_and_sensor_evidence(tmp_path):
     root = Path(__file__).resolve().parents[1]
-    result = run_operator_workflow(
+    result = run_oct29_operator_workflow(
         root, tank_image=tmp_path / "missing.jpg", plots=False
     )
     report = result["operator_report"]

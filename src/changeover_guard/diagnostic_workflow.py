@@ -1,10 +1,12 @@
-"""Notebook/CLI orchestration for October 29 operator diagnostics."""
+"""Photo initialization followed by CSI training/testing and operator diagnostics."""
 
 import ast
 import base64
 import hashlib
 import html
 import json
+import uuid
+from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
@@ -31,8 +33,8 @@ def audit_notebooks(root: Path) -> pd.DataFrame:
             "No pre-fill subtraction. Use identical holdouts and proxy groups; inspect pre-fill only as operator follow-up.",
         ),
         "operator_diagnostic_system.ipynb": (
-            "Controlled baseline coverage and evidence-aware operator explanations.",
-            "Abstain when references, measured fill, previous signatures or camera evidence are unavailable.",
+            "Use the October 29 photograph solely to initialize active-tank colors.",
+            "Train/test on CSI whole-recipe holdouts; no October 29 vial fallback or pre-fill subtraction.",
         ),
     }
     rows = []
@@ -122,15 +124,16 @@ def plot_benchmark(measurements, scores, output: Path, threshold=2.2):
     import matplotlib.pyplot as plt
 
     runs = list(measurements.groupby("run_id", sort=False))
+    methods = list(scores.method.unique()) if not scores.empty else list(METHODS)
     fig, axes = plt.subplots(
         len(runs),
-        2,
-        figsize=(12, max(5, len(runs) * 2.3)),
+        len(methods),
+        figsize=(6 * len(methods), max(5, len(runs) * 2.3)),
         squeeze=False,
         layout="constrained",
     )
     for row_index, (run_id, run) in enumerate(runs):
-        for col, method in enumerate(METHODS):
+        for col, method in enumerate(methods):
             axis = axes[row_index, col]
             subset = scores[scores.run_id.eq(run_id) & scores.method.eq(method)]
             axis.plot(subset.vial, subset.delta_e, "o-", label=method)
@@ -161,7 +164,10 @@ def plot_benchmark(measurements, scores, output: Path, threshold=2.2):
             axis.grid(alpha=0.2)
             if row_index == 0:
                 axis.legend(fontsize=7)
-    fig.suptitle("A vs B — same usable rows, whole-run holdout, identical threshold")
+    holdout = "whole-recipe holdout" if "fold_id" in scores else "whole-run holdout"
+    fig.suptitle(
+        f"Baseline comparison — same usable rows, {holdout}, identical threshold"
+    )
     fig.savefig(output / "baseline_comparison.png", dpi=120)
     plt.close(fig)
 
@@ -169,6 +175,8 @@ def plot_benchmark(measurements, scores, output: Path, threshold=2.2):
 def plot_operator_timeline(report, output: Path):
     import matplotlib.pyplot as plt
 
+    report = report.copy()
+    report["plot_x"] = report.get("inspection_index", report.vial)
     colors = {
         "measurement_sensor_reject": "#b22c2c",
         "expected_changeover_carryover": "#b76e00",
@@ -186,7 +194,7 @@ def plot_operator_timeline(report, output: Path):
     )
     for index, (_, run) in enumerate(report.groupby("run_id", sort=False)):
         axes[0].plot(
-            run.vial,
+            run.plot_x,
             run.delta_e,
             "o-",
             color="#226da2",
@@ -205,7 +213,7 @@ def plot_operator_timeline(report, output: Path):
             else subset[subset.delta_e.notna()]
         )
         axes[0].scatter(
-            scored.vial,
+            scored.plot_x,
             scored.delta_e.fillna(0),
             color=colors[state],
             marker="x" if state == "measurement_sensor_reject" else "o",
@@ -214,7 +222,7 @@ def plot_operator_timeline(report, output: Path):
         )
     no_reference = report[report.trusted_color & report.delta_e.isna()]
     axes[0].scatter(
-        no_reference.vial,
+        no_reference.plot_x,
         np.zeros(len(no_reference)),
         marker="s",
         facecolors="none",
@@ -223,7 +231,7 @@ def plot_operator_timeline(report, output: Path):
         label="Reference unavailable (unscored)",
     )
     for _, run in report.groupby("run_id", sort=False):
-        start = run.vial.min() - 0.5
+        start = run.plot_x.min() - 0.5
         axes[0].axvline(start, color="gray", linewidth=0.7)
         axes[0].text(
             start + 0.15,
@@ -233,7 +241,7 @@ def plot_operator_timeline(report, output: Path):
             fontsize=9,
         )
     for _, row in report.iterrows():
-        axes[1].bar(row.vial, 1, color=colors[row.diagnostic_state], alpha=0.18)
+        axes[1].bar(row.plot_x, 1, color=colors[row.diagnostic_state], alpha=0.18)
         short = {
             "measurement_sensor_reject": "SENSOR\nREJECT",
             "expected_changeover_carryover": "CARRYOVER\nSUSPECTED",
@@ -242,13 +250,15 @@ def plot_operator_timeline(report, output: Path):
             "evidence_pending": "PENDING",
         }[row.diagnostic_state]
         axes[1].text(
-            row.vial, 0.5, short, rotation=90, ha="center", va="center", fontsize=7
+            row.plot_x, 0.5, short, rotation=90, ha="center", va="center", fontsize=7
         )
     axes[0].set_ylabel("ΔE00; x / empty square at zero = unscored")
     axes[0].legend(ncol=2, fontsize=8)
     axes[0].grid(alpha=0.2)
     axes[1].set(
-        xticks=report.vial, yticks=[], xlabel="Vial ID — all label rows retained"
+        xticks=report.plot_x,
+        yticks=[],
+        xlabel="Inspection sequence — all label rows retained",
     )
     fig.suptitle(
         "Operator timeline — retrospective hypotheses; production remains PENDING without validation"
@@ -260,6 +270,8 @@ def plot_operator_timeline(report, output: Path):
 def dashboard_html(report, output: Path) -> str:
     """Standalone filterable report; all data text escaped, no external assets."""
     fields = [
+        "inspection_index",
+        "vial_key",
         "vial",
         "recipe_id",
         "diagnostic_label",
@@ -308,10 +320,10 @@ document.querySelectorAll('tbody tr').forEach(row=>{{row.hidden=this.value!==''&
 }});</script></body></html>"""
 
 
-def run_operator_workflow(
+def run_oct29_operator_workflow(
     root=".", *, tank_image=None, tank_rois=None, plots=True
 ) -> dict:
-    """Run fresh measurements; never silently fall back to stale saved results."""
+    """Explicit historical October 29 audit, not the default CSI train/test flow."""
     root = Path(root).resolve()
     config = default_config(root)
     # This notebook targets October 29 specifically, not whichever dataset happens to exist.
@@ -412,6 +424,195 @@ def run_operator_workflow(
         )
     return {
         "measurement_result": result,
+        "audit": audit,
+        "tank": tank,
+        "benchmark": benchmark,
+        "operator_report": report,
+        "summary": summary,
+        "output_dir": output,
+    }
+
+
+def plot_csi_sources(measurements: pd.DataFrame, output: Path):
+    """Show the actual representative filled frames used for CSI measurements."""
+    import cv2
+    import matplotlib.pyplot as plt
+    from matplotlib.patches import Rectangle
+
+    examples = measurements[measurements.stable_t_measure.notna()]
+    for page, offset in enumerate(range(0, len(examples), 16), 1):
+        subset = examples.iloc[offset : offset + 16]
+        fig, axes = plt.subplots(4, 4, figsize=(14, 11), layout="constrained")
+        for axis in axes.flat:
+            axis.set_axis_off()
+        for axis, row in zip(axes.flat, subset.itertuples()):
+            cap = cv2.VideoCapture(str(row.source_video))
+            try:
+                cap.set(cv2.CAP_PROP_POS_FRAMES, int(row.source_video_frame_index))
+                ok, frame = cap.read()
+                decoded_index = round(cap.get(cv2.CAP_PROP_POS_FRAMES)) - 1
+                decoded_s = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000
+                clock_ok = (
+                    decoded_index == int(row.source_video_frame_index)
+                    and abs(decoded_s - row.stable_decoded_t_measure)
+                    <= 1 / row.source_fps + 1e-6
+                )
+            finally:
+                cap.release()
+            if not ok or not clock_ok:
+                axis.text(
+                    0.5, 0.5, "Source frame unavailable / decode mismatch", ha="center"
+                )
+                continue
+            axis.imshow(frame[:, :, ::-1])
+            box = (
+                json.loads(row.roi_pixels)
+                if isinstance(row.roi_pixels, str)
+                else row.roi_pixels
+            )
+            x1, y1, x2, y2 = box
+            axis.add_patch(
+                Rectangle(
+                    (x1, y1),
+                    x2 - x1,
+                    y2 - y1,
+                    fill=False,
+                    edgecolor="yellow",
+                    linewidth=1.5,
+                )
+            )
+            axis.set_title(
+                f"{row.session_id} / vial {row.vial} / R{row.recipe_id}\n"
+                f"FILLED t={row.stable_t_measure:.2f}s",
+                fontsize=8,
+            )
+        fig.suptitle("CSI measured filled-vial frames — no pre-fill subtraction")
+        fig.savefig(output / f"csi_vial_roi_{page:02d}.png", dpi=120)
+        plt.close(fig)
+
+
+def run_operator_workflow(
+    root=".",
+    *,
+    tank_image=None,
+    tank_rois=None,
+    dataset_root=None,
+    plots=True,
+    sample_stride_s=1.0,
+) -> dict:
+    """Initialize from the October photo, train/test only on the CSI recordings.
+
+    No October 29 vial labels or readings are accessed by this default workflow.
+    Missing CSI data remains missing rather than invoking the historical audit.
+    """
+    from changeover_guard.csi_measurements import load_csi_measurements
+    from changeover_guard.csi_training import train_test_csi
+
+    root = Path(root).resolve()
+    dataset = (
+        Path(dataset_root)
+        if dataset_root is not None
+        else root / "data/csi-vial-fill-dataset"
+    )
+    dataset = dataset if dataset.is_absolute() else root / dataset
+    tank_path = (
+        Path(tank_image)
+        if tank_image is not None
+        else root / "data/10_29_26/top_view/images/tank_top_level_10_29_26.jpg"
+    )
+    tank_path = tank_path if tank_path.is_absolute() else root / tank_path
+    output = (
+        root
+        / "outputs/operator_diagnostics"
+        / (datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ") + "_" + uuid.uuid4().hex[:8])
+    )
+    output.mkdir(parents=True, exist_ok=False)
+    # Initialization is independent of—and precedes—reading CSI training labels.
+    tank = extract_tank_baselines(tank_path, tank_rois)
+    measured = load_csi_measurements(dataset, sample_stride_s=sample_stride_s)
+    measurements = measured["measurements"]
+    benchmark = train_test_csi(measurements, tank, threshold=2.2)
+    report = (
+        diagnose_vials(measurements, benchmark)
+        if not measurements.empty
+        else pd.DataFrame()
+    )
+    audit = audit_notebooks(root)
+    for filename, table in [
+        ("notebook_audit.csv", audit),
+        ("csi_vial_measurements.csv", measurements),
+        ("baseline_scores.csv", benchmark["scores"]),
+        ("baseline_metrics.csv", benchmark["metrics"]),
+        ("operator_root_cause_report.csv", report),
+    ]:
+        table.to_csv(output / filename, index=False)
+    write_json(output / "csi_measurement_audit.json", measured["audit"])
+    write_json(output / "training_folds.json", benchmark["folds"])
+    benchmark["training_metrics"].to_csv(output / "training_metrics.csv", index=False)
+    write_json(output / "csi_trained_model.json", benchmark["final_model"])
+    write_json(output / "baseline_selection.json", benchmark["selection"])
+    write_json(output / "operator_root_cause_report.json", report.to_dict("records"))
+    tank_record = dict(tank)
+    tank_record["path"] = (
+        str(tank_path.relative_to(root))
+        if tank_path.is_relative_to(root)
+        else str(tank_path)
+    )
+    write_json(output / "tank_initialization.json", tank_record)
+    decoded_recording = any(
+        item.get("status") == "measured" for item in measured["audit"]
+    )
+    stage_status = (
+        "missing_data"
+        if measurements.empty or not decoded_recording
+        else "partial_data"
+        if measured["missing_inputs"]
+        else "measured"
+    )
+    summary = {
+        "status": stage_status,
+        "tank_initialization_source": tank_record["path"],
+        "tank_image_status": tank["status"],
+        "training_and_test_dataset": str(dataset.relative_to(root))
+        if dataset.is_relative_to(root)
+        else str(dataset),
+        "october29_vials_used_for_training_or_testing": False,
+        "vials": len(measurements),
+        "labeled_vials": len(measurements),
+        "selection": benchmark["selection"],
+        "quality_eligible_vials": int(report.trusted_color.sum()) if len(report) else 0,
+        "diagnostic_states": report.diagnostic_state.value_counts().to_dict()
+        if len(report)
+        else {},
+        "color_assessments": report.color_assessment.value_counts().to_dict()
+        if len(report)
+        else {},
+        "missing_inputs": measured["missing_inputs"]
+        + ([] if tank["status"] == "measured" else [tank_record["path"]]),
+        "holdout": "leave one entire recipe out; every vial and session of the tested recipe excluded from training",
+        "camera_repeatability_proven": False,
+        "production_decisions_enabled": False,
+        "prefill_subtraction_applied": False,
+        "root_causes_confirmed": 0,
+        "scope": "CSI held-out prediction errors and retrospective diagnostic hypotheses; late vials are clean proxies only",
+    }
+    write_json(output / "operator_diagnostic_summary.json", summary)
+    write_json(
+        output.parent / "latest.json",
+        {"output_dir": str(output), "status": summary["status"]},
+    )
+    if plots:
+        plot_tank_roi(tank, output)
+        if not report.empty:
+            plot_benchmark(measurements, benchmark["scores"], output)
+            plot_operator_timeline(report, output)
+            plot_csi_sources(measurements, output)
+    if not report.empty:
+        (output / "operator_dashboard.html").write_text(
+            dashboard_html(report, output), encoding="utf-8"
+        )
+    return {
+        "measurement_result": measured,
         "audit": audit,
         "tank": tank,
         "benchmark": benchmark,

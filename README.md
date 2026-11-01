@@ -94,15 +94,16 @@ optical-density/decay fits. Camera proof and independent clean-model validation
 gate production pass/fail; missing data produces explicit pending/null results.
 See [configuration, calibration controls and validation](docs/transition_analysis.md).
 
-For the October 29 operator investigation, open
+For tank-initialized CSI training and testing, open
 [`notebooks/operator_diagnostic_system.ipynb`](notebooks/operator_diagnostic_system.ipynb).
-It compares tank-camera and held-out-run vial-camera references on identical
-usable vials, displays source ROIs and the complete 27-vial timeline, and exports
-evidence-based explanations and operator actions. Missing references and causal
-evidence remain pending. Pre-fill inspection is a follow-up suggestion only;
-no pre-fill color subtraction is performed. See the
-[operator diagnostic guide](docs/operator_diagnostic_system.md) for tank-image
-upload, benchmark limits and CLI usage.
+The October 29 overhead photograph initializes the tank colors; training and
+held-out-recipe testing use only `data/csi-vial-fill-dataset/vial_fill/labels/`
+and the matching CSI videos. The notebook exports fold identities, prediction
+errors, source ROIs and per-vial operator explanations. Missing CSI inputs or
+training evidence remain explicit; October 29 vials are never a fallback test
+set. Pre-fill inspection is a follow-up suggestion only, with no subtraction.
+See the [operator diagnostic guide](docs/operator_diagnostic_system.md) for
+tank-image upload, dataset paths, validation limits and CLI usage.
 
 ### Who owns what
 

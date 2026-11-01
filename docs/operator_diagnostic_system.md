@@ -1,173 +1,181 @@
 # Operator diagnostic notebook
 
 Open [`notebooks/operator_diagnostic_system.ipynb`](../notebooks/operator_diagnostic_system.ipynb)
-on `model_implementation`. Install its optional dependencies with:
+on `model_implementation`. The workflow uses two distinct sources:
+
+| Purpose | Source |
+| --- | --- |
+| Initialize pure T100/T200/T400 tank colors | `data/10_29_26/top_view/images/tank_top_level_10_29_26.jpg` |
+| Train and test mixture-color predictions | `data/csi-vial-fill-dataset/vial_fill/labels/` and the matching CSI videos |
+
+October 29 vial observations are **not** training or test examples in this
+workflow. The overhead image supplies fixed initial tank colors; CSI vial
+observations supply the camera-transfer training targets and held-out results.
+
+## Run
 
 ```bash
 uv sync --locked --group analysis
+uv run --locked --group analysis python scripts/analyze_operator_diagnostics.py
 ```
 
-Select the repository's `.venv` Python kernel and run all cells. A CLI runs the
-same analysis:
+Select the repository's `.venv` Python kernel to run the notebook. For another
+local extraction path or original tank image:
 
 ```bash
-uv run --locked --group analysis python scripts/analyze_operator_diagnostics.py
-# Optional alternate original tank image:
-uv run --locked --group analysis python scripts/analyze_operator_diagnostics.py --tank-image /path/to/tank.jpg
+uv run --locked --group analysis python scripts/analyze_operator_diagnostics.py --dataset-root /path/to/csi-vial-fill-dataset --tank-image /path/to/tank.jpg
 ```
 
-The CLI exits 0 when vial measurements were produced, including partial analyses
-with a missing tank image, and 2 when vial measurements are missing. Inspect the
-summary's evidence/coverage fields; exit 0 is not a production-quality decision.
+`--dataset-root` accepts the CSI wrapper, its `vial_fill/` folder, or the exact
+`vial_fill/labels/` folder supplied by the user. Labels provide recipe identities, requested
+volumes and fill windows; images/video are still needed to measure actual vial
+color. The loader discovers labeled CSI videos and records missing or invalid
+inputs explicitly. It never falls back to October 29 vial data.
 
-## Input and audit
+The notebook provides a tank-image upload control when the original JPG is not
+at the configured path. Upload it and rerun the analysis cells. A photo visible
+in chat is not automatically a local file. Review the displayed tank liquid
+ROIs before interpreting measurements; other camera views need new rectangles.
+T300 remains excluded from recipe prediction.
 
-The notebook reads every existing `.ipynb` source and records its imports, source
-hash and lessons reused. The implementation reuses `model_workflow.run_workflow`
-and the existing October 29 timestamped-still measurement, camera-clock audit,
-dark-channel clipping, uneven-patch checks and blackout/operator-error labels.
-It does not apply a fixed 30-second video offset. Measurement sources retain
-timestamps and image hashes.
+## Measurement and provenance
 
-Expected collection directory: `data/10_29_26/vial_filled/`, including labels,
-images and `image_index.csv`. The clock audit is
-`analysis/10_29_26/camera_clock_audit.csv`.
+The workflow audits existing notebook sources and records the source files used.
+CSI measurements come from the matching video within each vial's labeled fill
+interval. Decode timestamps and stable-window quality are checked. Recipes,
+run boundaries, rejected observations, sample windows and source video/ROI
+identities remain available for inspection.
 
-The overhead photograph is expected at:
+The October 29 clock mismatch is a lesson reused by the audit, not an offset
+applied to CSI videos. The system does not assume that a brightness-defined
+cycle boundary identifies the correct physical vial, or that still-image wall
+timestamps can be used directly as video playback seconds.
 
-```
-data/10_29_26/top_view/images/tank_top_level_10_29_26.jpg
-```
+## Tank initialization and CSI training
 
-If it is missing, the notebook provides an image-upload widget. Upload the
-original JPG/PNG, then rerun Section 3 onward. A picture visible in chat is not
-necessarily available as a file to the execution environment. No generated
-photograph, manually guessed RGB value or unrelated old tank image is used as
-a fallback. The current cloud run lacks those original image bytes, so its
-Approach A results explicitly remain missing.
+The initial optical candidate combines tank-camera colors in linear RGB /
+effective optical density relative to T100. Pure recipes reproduce their tank
+endpoint. Clipped tank channels are rejected. This is an initial color proxy;
+the overhead camera and vial camera have different illumination and optical
+paths. A static photograph does not measure tank concentration or liquid level.
 
-Normalized ROIs are provided for the 4:3 overhead view supplied by the user.
-Review the drawn liquid patches before interpreting measurements. Other camera
-poses require different rectangles. T300 is excluded. A static top photograph
-provides color signatures, not calibrated levels or tank concentration.
+The trained candidate starts with these tank-derived recipe predictions and
+fits a fixed, regularized affine camera-transfer correction in linear RGB using
+CSI training observations only. Training uses usable late-vial observations as
+settled-color proxies and excludes the first vial after a recipe change. These
+proxies are not independently certified clean chemistry.
 
-## Controlled initialization comparison
+The transfer fit requires sufficient distinct training recipes and an
+identifiable design. Missing tank pixels, inadequate training coverage or
+invalid measurements produce an explicit unavailable fit rather than invented
+coefficients. Composition fractions are modeled; a separate total-volume /
+optical-path-length effect is not established by this model.
 
-Approach A combines the measured pure-tank endpoints in linear RGB / effective
-optical density relative to T100. Pure recipes reproduce their corresponding
-tank RGB. Signed channel OD is retained for this experimental candidate rather
-than distorting a pure endpoint with nonnegativity constraints. It has no learned
-camera-transfer or vial-path calibration and is never independently promoted to
-a chemical diagnosis or production release. Clipped tank channels are rejected.
-Composition fractions are modeled; total-volume/path-length effects are not.
+## Training/test separation
 
-Approach B uses stable two-vial tails from matching recipe/composition runs in
-the vial-camera domain. All observations from the evaluated run are excluded
-from reference construction. Unlike the original analysis, there is no same-run
-tail fallback. Source run and vial identities are exported in every score row.
-Other runs can be later in the recording: this is retrospective evaluation.
+Evaluation leaves one **whole recipe** out at a time:
 
-Both methods retain the same 16/27 quality-eligible vial IDs and threshold
-`delta_e < 2.2`. Their comparative metrics use only the intersection of IDs with
-both scores. Missing observations and targets remain present with reasons.
+1. All CSI observations belonging to the test recipe are excluded from that
+   fold's fit. Recipe IDs with identical normalized tank fractions are held out
+   together, including different-total-mL aliases, because the model uses ratios.
+2. Only the remaining recipes' eligible training observations fit the transfer.
+3. The frozen fold predicts every quality-eligible vial of the held-out recipe.
+4. Fold artifacts retain train/test vial identities, training-target identities,
+   fitted coefficients and training metrics separately from test metrics.
 
-First-changeover and late-run positions are **proxy groups**, not independently
-certified contaminated and clean samples. Late-run membership is fixed by
-sequence position, before inspecting its error; only training-tail candidates
-are filtered for stable appearance. Metrics include coverage, first/late median
-errors, separation and balanced proxy accuracy. A winner requires both proxy
-groups in common coverage. A provisional B engine can still report evidence
-without declaring a head-to-head winner. This is exploratory model selection,
-not a nested or independent-session test. It cannot establish production accuracy.
+Adjacent frames are not independently split across training and test sets.
+Each test vial's color is used to score its prediction, never to fit that
+prediction or select a reference for itself. The fixed regularization is not
+tuned against the held-out colors.
 
-## Attribution and evidence gates
+Training weights distinct fractional compositions equally. Predictions outside
+the RGB gamut are withheld. Composition-hull extrapolations retain their test
+errors and explicit domain flag but cannot authorize process-cause attribution.
+An extrapolating previous-recipe endpoint cannot establish a carryover trajectory
+either; both endpoints must have support in the same training fold.
+An all-CSI final refit is saved separately as `csi_trained_model.json`; it is
+never used to calculate held-out scores. Per-fold in-sample errors are exported
+in `training_metrics.csv` separately from test metrics.
 
-`operator_diagnostics.diagnose_vials` emits one report row for every label row:
+The benchmark compares raw tank-camera predictions with trained tank-initialized
+predictions using identical test-vial coverage and `Delta E00 < 2.2`. Coverage and
+missing-score reasons are reported before interpreting errors. First-changeover
+and late-run positions are proxy groups for diagnostic separation, not known
+contaminated/clean labels or a production-accuracy measurement.
 
-* **Measurement / sensor reject:** failed quality, stale/unverified clock,
-  unavailable color or operator-error/blackout label. Color does not receive a
-  numerical clean-reference score.
-* **Changeover carryover suspected:** recipe change, distinguishable previous
-  color endpoint, agreement with a Lab color segment toward that endpoint, and
-  decay over at least three consecutive usable observations beginning with the
-  first vial. Future observations make this retrospective. A trajectory weight
-  is not an estimated chemical fraction.
-* **Persistent tank / recipe / fill fault suspected:** a sustained nondecaying
-  deviation, an unrequested in-camera signature, a verified tank-state alert, or
-  independently calibrated abnormal measured fill. Possible hardware checks are
-  suggested; no exact root cause or flush quantity is invented. Persistent
-  carryover remains an alternative when clearance volume is unknown.
-* **In-spec / clean production:** additionally requires validated independent
-  clean references and camera evidence. Surrogate references cannot qualify.
-* **Evidence pending:** absent targets or inconclusive causal evidence. An
-  exploratory color match can coexist with pending production status.
+An empirical per-recipe vial reference cannot predict an unseen held-out recipe
+when all of that recipe's observations are excluded. Such Approach B references
+remain unavailable in this experiment; the system does not use test vials to
+fill them. The trained tank-initialized model is the primary exploratory engine
+only when it has valid held-out predictions.
 
-Measured fill is accepted only from explicit `measured_fill_ml` and
-`fill_calibration_verified` evidence. `requested_ml`, `dispensed_ml` when marked
-`requested_proxy`, and image patch height are not measured volume. Likewise a
-tank alert requires `tank_state_verified` and `tank_state_alert`; a static color
-image cannot establish a tank/valve fault. October 29 supplies neither calibrated
-fill evidence nor verified tank/valve telemetry.
+Recipe holdout tests generalization to another composition within the available
+collection. It does not establish generalization to independent sessions, days,
+cameras or lighting. Camera repeatability and independent clean references are
+still required before production release.
 
-An optional `expected_clearance_ml` must come from independently validated
-experiments. The workflow never estimates it from the same evaluated run.
+## Operator diagnostics
 
-**No pre-fill subtraction is applied.** The engine does not read pre-fill Lab
-values. For an outside-tolerance, rejected or reference-missing vial, an operator
-suggestion can ask for visual inspection of the same physical vial before
-dispensing on a repeat. That suggestion never modifies RGB, Lab, Delta E,
-tolerance or attribution numerically. The older experimental notebook is
-preserved as historical work, not imported into this workflow.
+Each labeled CSI vial receives a report row, including rejected or unscored
+vials. The report distinguishes:
 
-## Observed October 29 execution
+* **Measurement / sensor reject:** unreliable image, decode timing, clipping,
+  missing stable color or other measurement-quality failure.
+* **Changeover carryover suspected:** a recipe change, color trajectory toward
+  the previous recipe, and a supported recovery trend. The previous and current
+  predictions must use the same held-out fold; cross-fold camera predictions
+  cannot establish a mixing trajectory.
+* **Persistent tank / recipe / fill fault suspected:** persistent deviation,
+  supported unrequested-color evidence, a verified tank alert or independently
+  calibrated abnormal fill. These observations suggest investigation, not an
+  exact chemical root cause or automatic flush volume.
+* **In-spec / clean production:** requires validated reference and camera
+  evidence in addition to a color match. Experimental fits cannot authorize it.
+* **Evidence pending:** no valid target, insufficient training evidence or an
+  inconclusive cause. An exploratory color match may still have pending
+  production status.
 
-The executed notebook reproduces 27 label rows, 26 sampled images and 16 usable
-readings. It reports 11 sensor/label rejects, including vial 9's 6.79-second stale
-frame and vial 10's unobservable blackout.
+The timeline and filterable HTML dashboard keep all labels visible. Missing
+targets and sensor rejects do not appear as zero color error. Recovery
+attribution may use later observations and is marked retrospective.
 
-Whole-run holdout permits B scores for 10 vials: three exploratory matches and
-seven outside-tolerance readings. Six usable vials have no qualifying reference
-outside their run. There is no usable T200 target.
+Requested mL is not measured fill. A fill fault needs independently calibrated
+`measured_fill_ml` with `fill_calibration_verified`; a tank fault needs verified
+state evidence. No tank level, valve malfunction, chemical purity, expected
+clearance volume or confidence interval is inferred from the static photograph.
 
-With the overhead image unavailable, A scores and common-coverage comparison
-counts are zero. B is selected **provisionally**, not as a benchmark winner.
-Within B's available coverage, the first-changeover proxy median is 15.09 Delta
-E00 (n=2) and the late-run proxy median is 3.28 (n=4), a separation of 11.81. The
-balanced proxy score is 0.625: both first proxies exceed tolerance, while only one
-of the four late proxies is below tolerance. These tiny same-session proxy counts
-must not be presented as general diagnostic accuracy.
+**No pre-fill subtraction is applied.** Outside-tolerance or inconclusive vials
+can receive a suggestion to inspect/capture the same vial before dispensing on
+a repeat. That suggestion does not alter measured RGB, Lab, Delta E or the
+trained prediction. The older subtraction experiment is preserved as historical
+work and is not used in this pipeline.
 
-Vial 13 has initial error 14.94, declining to 1.10 across four usable vials, but
-its nearest previous-to-target Lab trajectory residual is about 2.73, exceeding
-the 2.2 trajectory criterion. Vial 23 starts at 15.23, has a trajectory residual
-about 3.31, and later rebounds away from the target. Thus neither is labeled
-confirmed carryover. Their explanations state the decline/rebound and failed
-trajectory evidence, and suggest review of vial appearance and process state.
+## Outputs and available results
 
-All production decisions remain `PENDING`. No fitted mixture coefficients,
-carryover tau, confidence intervals, chemical-purity claims or flush quantities
-are fabricated. These results differ from in-sample tail scoring because the
-reference holdout is intentionally stricter.
+Each run writes a fresh directory under `outputs/operator_diagnostics/` with:
 
-## Outputs and software integration
+* notebook/input audit and missing-input reasons;
+* tank colors, ROIs and image provenance;
+* measured CSI vials, quality flags and measurement provenance;
+* held-out predictions, coverage and train/test metrics;
+* per-fold training/test identities and fitted transfer parameters;
+* operator explanations, suggested actions, plots and filterable HTML report.
 
-Each execution writes a fresh `outputs/operator_diagnostics/<run>/` directory:
+The CSI dataset and original tank image are absent from the current cloud
+checkout. Consequently, no numerical CSI training/test performance is claimed
+from that run. Upload/save the original tank image and make the CSI directory
+available locally to execute the experiment. Missing CSI files never trigger an
+October 29 evaluation or reuse an older successful result.
 
-* notebook audit, audited vial measurements and source metadata;
-* tank RGB/ROI provenance or a missing-input reason;
-* per-vial A/B scores, proxy metrics, baseline selection and training-tail IDs;
-* operator report in CSV/JSON with explanation, action and evidence fields;
-* tank/vial ROI verification, A/B curves and all-27-vial timeline;
-* standalone `operator_dashboard.html` with attribution-state filtering;
-* original camera/clean-model/carryover evidence artifacts.
+## Historical October 29 analysis
 
-The legacy `measure.vial`, `mixing.predict`, `advise.check` and `advise.advise`
-adapters now perform the supported calculations rather than bare stubs.
-Measurement returns color with NaN for unavailable vial fill. Checks compare to
-clean color, not a contaminated forecast, and abstain when fill is unmeasured.
-Mixing requires an explicit validated vial-camera model/calibration and abstains
-for unsupported composition changes; the conditional recovery fit cannot predict
-an unseen first vial. Advice recommends investigation without inventing an
-automatic flush or optimized queue. Existing API callers continue to return
-pending until the required scientific evidence is available. Shared contracts
-and their legacy thresholds are unchanged; the notebook explicitly uses 2.2.
+The saved 27-vial October 29 assessment remains under `analysis/10_29_26/` and
+`docs/dataset_assessment_10_29_26.md`. Explicit historical reproduction is
+available through `run_oct29_operator_workflow`; it is not the default operator
+training/test workflow. Its 16 usable readings, missing T200 targets and earlier
+Delta E values must not be presented as results for the CSI dataset.
+
+The legacy contract adapters continue to abstain when validated model, camera
+or measured-fill evidence is unavailable. This exploratory notebook does not
+automatically enable production decisions in the API. Shared contracts and
+their legacy thresholds remain unchanged.

@@ -171,7 +171,20 @@ def diagnose_vials(
         action = "Review measurement and reference evidence before making a production decision."
         explanation = "No independent clean reference is available; chemical mixture cannot be verified."
         previous_rgb = None
-        if previous is not None:
+        if score is not None and all(
+            f"previous_target_{c}" in score.index for c in RGB
+        ):
+            predicted_previous = score[[f"previous_target_{c}" for c in RGB]].to_numpy(
+                float
+            )
+            prior_domain = score.get("previous_composition_in_training_hull", True)
+            if (
+                np.isfinite(predicted_previous).all()
+                and pd.notna(prior_domain)
+                and bool(prior_domain)
+            ):
+                previous_rgb = predicted_previous
+        elif previous is not None:
             previous_rgb, _ = empirical_target(
                 tails,
                 int(previous.recipe_id),
@@ -213,6 +226,21 @@ def diagnose_vials(
             )
             evidence.append("camera_transfer_unvalidated")
             action = "Validate paired tank/vial clean controls before attributing this color difference to the process."
+            if de >= threshold:
+                suggestion = PREFILL_SUGGESTION
+        elif (
+            score.reference_scope == "csi_train_only_camera_transfer"
+            and pd.notna(score.get("composition_in_training_hull"))
+            and not bool(score.composition_in_training_hull)
+        ):
+            assessment = "outside_model_domain"
+            evidence.append("recipe_extrapolates_beyond_training_compositions")
+            explanation = (
+                f"Held-out color error is {de:.2f} ΔE00, but this recipe lies outside "
+                "the training composition hull. Retain the error as an extrapolation test; "
+                "model extrapolation cannot identify carryover or a process fault."
+            )
+            action = "Collect additional CSI training compositions around this recipe before causal interpretation."
             if de >= threshold:
                 suggestion = PREFILL_SUGGESTION
         else:
@@ -342,6 +370,7 @@ def diagnose_vials(
                 suggestion = PREFILL_SUGGESTION
         records.append(
             {
+                "session_id": vial.session_id,
                 "vial_key": vial.vial_key,
                 "vial": int(vial.vial),
                 "recipe_id": int(vial.recipe_id),
@@ -357,6 +386,12 @@ def diagnose_vials(
                 "delta_e": de,
                 "threshold": threshold,
                 "reference_scope": None if score is None else score.reference_scope,
+                "composition_in_training_hull": None
+                if score is None
+                else score.get("composition_in_training_hull"),
+                "previous_composition_in_training_hull": None
+                if score is None
+                else score.get("previous_composition_in_training_hull"),
                 "reference_runs": "[]" if score is None else score.reference_runs,
                 "trusted_color": trusted,
                 "quality_flags": vial.get("quality_flags", ""),
@@ -378,4 +413,6 @@ def diagnose_vials(
                 **trend,
             }
         )
-    return pd.DataFrame(records)
+    report = pd.DataFrame(records)
+    report["inspection_index"] = np.arange(1, len(report) + 1)
+    return report
